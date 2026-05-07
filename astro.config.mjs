@@ -7,4 +7,11 @@ import { defineConfig } from 'astro/config';
 export default defineConfig({
 	site: 'https://ethankkuntz.github.io',
 	integrations: [mdx(), sitemap()],
+	vite: {
+		server: {
+			watch: {
+				usePolling: true,
+			},
+		},
+	},
 });
