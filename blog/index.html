@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog — Ethan K Kuntz</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&display=swap" rel="stylesheet">
+    <style>
+        *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+
+        :root {
+            --bg: #F6F3EE;
+            --fg: #1A1917;
+            --fg-muted: #8A8680;
+            --accent: #2D6A4F;
+            --rule: #D6D1C9;
+            --serif: 'DM Serif Display', Georgia, serif;
+            --sans: 'Instrument Sans', system-ui, sans-serif;
+        }
+
+        html { font-size: 16px; }
+
+        body {
+            background: var(--bg);
+            color: var(--fg);
+            font-family: var(--sans);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* --- NAV --- */
+        nav {
+            padding: 2rem 3rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: fadeDown 0.8s ease both;
+        }
+        .nav-name {
+            font-family: var(--serif);
+            font-size: 1.15rem;
+            letter-spacing: -0.01em;
+            color: var(--fg);
+            text-decoration: none;
+        }
+        .nav-links {
+            display: flex;
+            gap: 2.5rem;
+            list-style: none;
+        }
+        .nav-links a {
+            font-size: 0.85rem;
+            font-weight: 500;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--fg-muted);
+            text-decoration: none;
+            position: relative;
+            transition: color 0.3s;
+        }
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 1.5px;
+            background: var(--accent);
+            transition: width 0.3s ease;
+        }
+        .nav-links a:hover { color: var(--fg); }
+        .nav-links a:hover::after { width: 100%; }
+
+        /* --- BLOG CONTENT --- */
+        .blog-hero {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 0 3rem 6rem;
+            text-align: center;
+        }
+        .blog-label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 1.5rem;
+            animation: fadeUp 0.7s 0.2s ease both;
+        }
+        .blog-title {
+            font-family: var(--serif);
+            font-size: clamp(2.5rem, 5.5vw, 4.5rem);
+            line-height: 1.1;
+            letter-spacing: -0.025em;
+            margin-bottom: 1.75rem;
+            animation: fadeUp 0.7s 0.35s ease both;
+        }
+        .blog-rule {
+            width: 64px;
+            height: 2px;
+            background: var(--rule);
+            border: none;
+            margin-bottom: 1.75rem;
+            animation: growRight 0.6s 0.5s ease both;
+        }
+        .blog-message {
+            font-size: 1.15rem;
+            line-height: 1.7;
+            color: var(--fg-muted);
+            max-width: 420px;
+            animation: fadeUp 0.7s 0.55s ease both;
+        }
+        .back-link {
+            margin-top: 2.5rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            letter-spacing: 0.04em;
+            color: var(--accent);
+            text-decoration: none;
+            border: 1.5px solid var(--accent);
+            padding: 0.65rem 1.6rem;
+            border-radius: 2px;
+            transition: background 0.3s, color 0.3s;
+            animation: fadeUp 0.7s 0.7s ease both;
+        }
+        .back-link:hover {
+            background: var(--accent);
+            color: var(--bg);
+        }
+
+        /* --- FOOTER --- */
+        footer {
+            padding: 2rem 3rem;
+            border-top: 1px solid var(--rule);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: fadeUp 0.7s 0.8s ease both;
+        }
+        footer span {
+            font-size: 0.8rem;
+            color: var(--fg-muted);
+            letter-spacing: 0.02em;
+        }
+        .footer-links {
+            display: flex;
+            gap: 1.5rem;
+            list-style: none;
+        }
+        .footer-links a {
+            font-size: 0.8rem;
+            font-weight: 500;
+            letter-spacing: 0.03em;
+            color: var(--fg-muted);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        .footer-links a:hover {
+            color: var(--accent);
+        }
+
+        /* --- ANIMATIONS --- */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeDown {
+            from { opacity: 0; transform: translateY(-12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes growRight {
+            from { width: 0; }
+            to   { width: 64px; }
+        }
+
+        /* --- MOBILE --- */
+        @media (max-width: 600px) {
+            nav { padding: 1.5rem 1.5rem; }
+            .nav-links { gap: 1.5rem; }
+            .blog-hero { padding: 0 1.5rem 4rem; }
+            footer { padding: 1.5rem; flex-direction: column; gap: 0.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/" class="nav-name">Ethan K Kuntz</a>
+        <ul class="nav-links">
+            <li><a href="/">Home</a></li>
+            <li><a href="/blog">Blog</a></li>
+        </ul>
+    </nav>
+
+    <main class="blog-hero">
+        <p class="blog-label">Blog</p>
+        <h1 class="blog-title">Coming Soon.</h1>
+        <hr class="blog-rule">
+        <p class="blog-message">I'm working on some writing. Check back soon — there will be things worth reading here.</p>
+        <a href="/" class="back-link">Back Home</a>
+    </main>
+
+    <footer>
+        <span>&copy; 2026 Ethan K Kuntz</span>
+        <ul class="footer-links">
+            <li><a href="https://x.com/KanizsaBoundary" target="_blank" rel="noopener">Twitter</a></li>
+            <li><a href="https://substack.com/@mindthemanifold" target="_blank" rel="noopener">Substack</a></li>
+        </ul>
+    </footer>
+</body>
+</html>
