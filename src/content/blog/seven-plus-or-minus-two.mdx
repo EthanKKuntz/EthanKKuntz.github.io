@@ -1,0 +1,42 @@
+---
+title: 'Seven, plus or minus two'
+description: 'The most misunderstood paper in psychology'
+pubDate: 'May 02 2026'
+---
+
+import miller1 from '../../assets/miller1.webp';
+import miller2 from '../../assets/miller2.webp';
+
+> "You can only store 7 (plus or minus 2) things in working memory"
+
+You've probably heard this before, maybe under the name Miller's Law. It's nearly flat-out wrong, and most citations of the paper clearly have not read the actual paper. To quote Miller himself, on the very last lines of the paper:
+
+> For the present I propose to withhold judgment. Perhaps there is something deep and profound behind all these sevens, something just calling out for us to discover it. But I suspect that it is only a pernicious, Pythagorean coincidence.
+
+I suspect most people just read the title and osmose the content from how people talk about it. To be fair, the title and the content are at odds — it's a bit strange that "The Magical Number Seven, Plus or Minus Two: Some Limits on our Capacity for Processing Information" does not actually claim a sharp numerical limit like this. In fact, it actually warns against that limit:
+
+> Is this the same basic process that limits our unidimensional judgments to about seven categories? The generalization is tempting, but not sound in my opinion.
+
+Further, "… the same basic process that limits our unidimensional judgements…" is a bit strong given the data. For an example of unidimensional judgement, people were given a bunch of distinguishable colors, assigned a number to each, and held these mappings in memory. Then people were given a color and asked for the number.
+
+<img src={miller1.src} alt="Chart of absolute judgment experiment results" />
+
+This was done for a bunch of different stimuli. Points on a line, points in a square, loudness, pitch, tactile vibration, etc. People did a bunch of trials with more and more mappings to remember, and the mutual information between their responses and the actual labels was calculated.
+
+<img src={miller2.src} alt="Channel capacity measurements across stimulus types" />
+
+> Now let us see where we are. First, the channel capacity does seem to be a valid notion for describing human observers. Second, the channel capacities measured for these unidimensional variables range from 1.6 bits for curvature to 3.9 bits for positions in an interval. Although there is no question that the differences among the variables are real and meaningful, the more impressive fact to me is their considerable similarity. If I take the best estimates I can get of the channel capacities for all the stimulus variables I have mentioned, the mean is 2.6 bits and the standard deviation is only 0.6 bit. In terms of distinguishable alternatives, this mean corresponds to about 6.5 categories, one standard deviation includes from 4 to 10 categories, and the total range is from 3 to 15 categories. Considering the wide variety of different variables that have been studied, I find this to be a remarkably narrow range.
+
+Personally, I think "considerable similarity" is overselling it. That's a good bit of spread, certainly too much to conclude that 7 distinguishable categories is actually a strong regularity. This, and his warnings against concluding this, have been insufficient to stop the popularization of "Miller's Law":
+
+> The average person can only keep 7 (plus or minus 2) items in their working memory.
+
+Meanwhile, in his paper (emphasis mine):
+
+> Before we look at any data on this topic I feel I must give you a word of warning to help you avoid some obvious associations that can be confusing. Everybody knows that there is a finite span of immediate memory and that for a lot of different kinds of test materials this span is about seven items in length. I have just shown you that there is a span of absolute judgment that can distinguish about seven categories and that there is a span of attention that will encompass about six objects at a glance. What is more natural than to think that all three of these spans are different aspects of a single underlying process? And *that is a fundamental mistake*, as I shall be at some pains to demonstrate. *This mistake is one of the malicious persecutions that the magical number seven has subjected me to.*
+
+Miller, even in death, has remained committed to helping people. Instead of a typical grave, his body resides enclosed in a turbine, where the rotation produced from misuse of his paper is converted into electricity to power the state of New Jersey.
+
+So, to recap the history. Miller observes people can usually repeat back about 7 numbers, 9 binary digits, and 5 random monosyllabic words. He further observes that people can hold around 6.5 (range of 3–15) stable mappings between numbers and whatever stimuli. Miller then makes his paper noting this "pernicious, Pythagorean coincidence", the telephone game is played at civilizational scale, and a few decades later you hear that people can store only 7 (plus or minus two) things in working memory.
+
+The paper is genuinely good. The concept of the span of absolute judgement, and the measurement of it in bits, is genuinely good. Miller is a little too flexible with the numbers sometimes, and modern updates have overturned a few of the ideas, but it's solid. It's just a shame the title was so much more memetically fit than the contents.

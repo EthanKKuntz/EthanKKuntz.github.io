@@ -1,0 +1,35 @@
+---
+title: 'I want better memory techniques'
+description: 'Surely we can do better'
+pubDate: 'May 14 2025'
+---
+
+import mem1 from '../../assets/mem1.webp';
+import mem2 from '../../assets/mem2.webp';
+import mem3 from '../../assets/mem3.webp';
+
+Existing memory techniques allow people to execute absurd feats. The current record for memorizing decimal digits in an hour is 4620. Binary digits in a half hour is 7485, and these records were set in 2019 by the 19-year-old North Korean Ryu Song I after about 8 months of intensive training. Before that, records were quite frequently broken. After, few records have been set, at least in part due to COVID preventing championship hosting.
+
+<img src={mem1.src} alt="Memory championship records" />
+<img src={mem2.src} alt="Memory championship records" />
+<img src={mem3.src} alt="Memory championship records" />
+
+This gives us a lower bound on human ability at ~4.16 bits/second of memorization power for a half hour, and ~4.26 bits/second for an hour. I tentatively claim that the actual limit is a good bit higher, both because the records are still going up and because there are probably improvements left to do with technique. It's also possible to memorize very quickly so long as you don't have to keep it up for long. Current records for memorizing a deck of cards are around 20 bits/second for a little more than 10 seconds, and about the same for memorizing numbers.
+
+The current main techniques are the method of loci and the PAO method. The method of loci is the classic "mind palace" method, where the practitioner places imaginary items symbolizing whatever needs to be remembered along a path they mentally walk. The PAO method is for memorizing digits specifically, and it starts with associating to each 2- or 3-digit number a unique person, action, and object. Then each group of 6 or 9 numbers is encoded to a person, action, and object, and the resultant mental image (Einstein balancing a sword!) is placed along the mind palace route.
+
+My interest is mainly because I want to have really good memory. Unfortunately, it seems like little attention has gone into figuring out how to get this stuff to work nicely for general natural data like visual imagery or text, and even less into adapting techniques to things like procedural/muscle memory. The PAO method is still interesting to me because it works so well. It must be tapping some deep principle of human memory, but as a technique it seems too inflexible for actual use.
+
+Another issue is that there's nothing for systematically integrating memory and processing. In natural cases, they tend to go together. It's easy to imagine how having better memory can help you think faster and vice versa, but I'm not aware of anything that puts this together systematically.
+
+Deep understanding/comprehension seems to be in a similar position. There hasn't been much of an effort getting existing memory and computation techniques to work directly for bettering comprehension, nor has there been much using better comprehension to memorize more efficiently. This might be partially downstream of the typical tasks being essentially memorization of noise. If there's nothing to understand, there's no reason for general understanding to improve.
+
+This leads me to think there are big mental upgrades available here. There's plenty of historical precedent for it. One that we all know and love is the Arabic numeral system, which allows us to represent and manipulate numbers that are far too large to fit into Roman numerals or analog representation. There are also meditators, who have been doing extreme feats of perception for a long time. Self-immolating monks come to mind. There's also speed counting, up to around 40–50 items per second. My personal favorite example is William Thurston, who was able to visualize high dimensional spaces. He started with the inability to construct 3D visual images because his eyes wouldn't focus together naturally, figured out how to do it manually, generalized the procedure to higher dimensions, and ended up as one of the best topologists ever.
+
+At this point, I have a bunch of things to try. One that seems especially promising is the construction of mind palaces that have more interesting connectivity than plain paths. The way I think of it is that maybe you could reuse the logical backbone of things if you represent it explicitly. Graph structures like trees might be handy for hierarchical relationships, all-to-all connectivity for dense semantic processing and similarity detection, and series-parallel graphs for relative timing of mental processes. The list goes on.
+
+Another idea is to tack a binary tree onto the side of a normal method of loci path, giving a sort of alternative way to access any particular item. With a "side view" of the mental path like this, you could essentially have pointers to every element you are handling instead of having it as a linked list. I'm not sure if this would work at all or be practically useful, but it's a pretty natural idea, so I'll give it a shot.
+
+There's a lot of basic science to be done. A pretty solid finding is that memorization rate goes down as the quantity of stuff goes up, but we don't really know why or how. We also know that during memorization with the method of loci, there is some spontaneous review of past items, but the precise structure of it is a mystery. There's no system for doing the reviewing, apparently everyone just sort of spontaneously does it. Open questions abound.
+
+Experiments on this and more coming in later posts. If you are also interested in practice and research in this direction, please contact me, I'd love to chat.
