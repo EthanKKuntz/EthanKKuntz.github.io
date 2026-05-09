@@ -13,7 +13,43 @@ import { SITE_TITLE } from '../consts';
 	<body>
 		<Header />
 		<main>
+			<h1>Psychophysics</h1>
+			<p>Interactive demonstrations of classic psychophysics experiments.</p>
+			<ul class="task-list">
+				<li><a href="/psychophysics/sternberg">Sternberg Memory Task</a> — how fast can you scan your short-term memory?</li>
+				<li><a href="/psychophysics/shepard-metzler">Shepard-Metzler Mental Rotation</a> — how do you rotate objects in your mind?</li>
+			</ul>
 		</main>
 		<Footer />
 	</body>
 </html>
+
+<style>
+	.task-list {
+		list-style: none;
+		padding: 0;
+		margin-top: 2rem;
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+	.task-list li {
+		padding: 1.25rem 1.5rem;
+		border: 1px solid var(--rule);
+		border-radius: 2px;
+		transition: border-color 0.2s;
+	}
+	.task-list li:hover {
+		border-color: var(--accent);
+	}
+	.task-list a {
+		font-family: var(--serif);
+		font-size: 1.1rem;
+		color: var(--fg);
+		font-weight: 500;
+	}
+	.task-list a:hover {
+		text-decoration: none;
+		color: var(--accent);
+	}
+</style>

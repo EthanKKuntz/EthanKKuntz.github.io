@@ -1,0 +1,402 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import Footer from '../../components/Footer.astro';
+import Header from '../../components/Header.astro';
+import { SITE_TITLE } from '../../consts';
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title={`Sternberg Task — ${SITE_TITLE}`} description="The Sternberg memory scanning task." />
+	</head>
+	<body>
+		<Header />
+		<main>
+			<h1>The Sternberg Memory Task</h1>
+			<p>
+				In 1966, Saul Sternberg showed that people scan short-term memory serially and exhaustively.
+				You'll see a set of digits briefly, then a probe digit. Judge whether the probe was in the set.
+				The striking result: response time increases linearly with set size — about 38ms per item —
+				and the slope is the same whether the answer is yes or no, suggesting you scan the whole set
+				every time regardless.
+			</p>
+			<p>Press <kbd>F</kbd> if the probe was in the set, <kbd>J</kbd> if it was not.</p>
+
+			<div id="task">
+				<p id="trial-counter" class="counter"></p>
+
+				<div id="phase-start" class="phase">
+					<div class="settings">
+						<label>
+							Trials per set size
+							<input type="number" id="trials-per-size" value="6" min="2" max="30" />
+						</label>
+					</div>
+					<button id="start-btn">Begin</button>
+				</div>
+
+				<div id="phase-fixation" class="phase" hidden>
+					<span class="display-item">+</span>
+				</div>
+
+				<div id="phase-memory" class="phase" hidden>
+					<div id="memory-items" class="display-item"></div>
+				</div>
+
+				<div id="phase-blank" class="phase" hidden>
+					<span class="display-item" style="opacity:0">+</span>
+				</div>
+
+				<div id="phase-probe" class="phase" hidden>
+					<div id="probe-digit" class="display-item"></div>
+					<p class="hint"><kbd>F</kbd> Yes &emsp; <kbd>J</kbd> No</p>
+				</div>
+
+				<div id="phase-results" class="phase" hidden>
+					<p class="result-summary">Accuracy: <strong id="accuracy"></strong> &ensp; Trials: <strong id="total-trials"></strong></p>
+					<canvas id="rt-chart"></canvas>
+					<div class="result-actions">
+						<button id="more-btn">Run more trials</button>
+						<button id="reset-btn">Start over</button>
+					</div>
+				</div>
+			</div>
+		</main>
+		<Footer />
+	</body>
+</html>
+
+<style>
+	kbd {
+		font-family: var(--sans);
+		font-size: 0.85rem;
+		background: var(--rule);
+		border: 1px solid var(--fg-muted);
+		border-radius: 3px;
+		padding: 2px 6px;
+	}
+	#task {
+		margin-top: 3rem;
+		min-height: 280px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+	}
+	.counter {
+		font-size: 0.85rem;
+		color: var(--fg-muted);
+		letter-spacing: 0.04em;
+		margin-bottom: 1rem;
+		height: 1.4em;
+	}
+	.phase {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 1.5rem;
+	}
+	.settings {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		font-size: 0.9rem;
+		color: var(--fg-muted);
+	}
+	.settings label {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+	.settings input {
+		width: 60px;
+		padding: 0.3rem 0.5rem;
+		border: 1px solid var(--rule);
+		border-radius: 2px;
+		background: var(--bg);
+		color: var(--fg);
+		font-family: var(--sans);
+		font-size: 0.9rem;
+		text-align: center;
+	}
+	.display-item {
+		font-family: var(--serif);
+		font-size: 4rem;
+		letter-spacing: 0.15em;
+		color: var(--fg);
+		line-height: 1;
+	}
+	.hint {
+		font-size: 0.9rem;
+		color: var(--fg-muted);
+		margin: 0;
+	}
+	button {
+		font-family: var(--sans);
+		font-size: 0.85rem;
+		font-weight: 500;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--accent);
+		background: none;
+		border: 1.5px solid var(--accent);
+		border-radius: 2px;
+		padding: 0.65rem 2rem;
+		cursor: pointer;
+		transition: background 0.2s, color 0.2s;
+	}
+	button:hover {
+		background: var(--accent);
+		color: var(--bg);
+	}
+	button.secondary {
+		color: var(--fg-muted);
+		border-color: var(--rule);
+	}
+	button.secondary:hover {
+		background: var(--rule);
+		color: var(--fg);
+	}
+	.result-summary {
+		font-size: 1rem;
+		color: var(--fg-muted);
+		margin: 0 0 1.5rem;
+	}
+	.result-actions {
+		display: flex;
+		gap: 1rem;
+		margin-top: 1.5rem;
+	}
+	#rt-chart { max-width: 100%; }
+	[hidden] { display: none !important; }
+</style>
+
+<script>
+	const DIGITS = [1,2,3,4,5,6,7,8,9];
+	const SET_SIZES = [1,2,3,4,5,6];
+
+	function shuffle<T>(arr: T[]): T[] {
+		const a = [...arr];
+		for (let i = a.length - 1; i > 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1));
+			[a[i], a[j]] = [a[j], a[i]];
+		}
+		return a;
+	}
+
+	function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)); }
+
+	function getTrialsPerSize(): number {
+		return Math.max(2, Math.min(30, parseInt((document.getElementById('trials-per-size') as HTMLInputElement).value) || 6));
+	}
+
+	function buildTrials(): number[] {
+		const n = getTrialsPerSize();
+		return shuffle(SET_SIZES.flatMap(s => Array(n).fill(s)));
+	}
+
+	let trials: number[] = [];
+	let trialIndex = 0;
+	let awaitingResponse = false;
+	let probeStartTime = 0;
+	let currentPositive = false;
+	const allResults: { setSize: number; RT: number; correct: boolean; positive: boolean }[] = [];
+
+	function setPhase(name: string) {
+		document.querySelectorAll<HTMLElement>('.phase').forEach(el => el.hidden = true);
+		const el = document.getElementById('phase-' + name);
+		if (el) el.hidden = false;
+	}
+
+	async function runTrial() {
+		const setSize = trials[trialIndex];
+		const memSet = shuffle(DIGITS).slice(0, setSize);
+		const positive = Math.random() < 0.5;
+		currentPositive = positive;
+
+		let probe: number;
+		if (positive) {
+			probe = memSet[Math.floor(Math.random() * memSet.length)];
+		} else {
+			const remaining = DIGITS.filter(d => !memSet.includes(d));
+			probe = remaining[Math.floor(Math.random() * remaining.length)];
+		}
+
+		document.getElementById('trial-counter')!.textContent =
+			`Trial ${allResults.length + 1} of ${allResults.length + trials.length - trialIndex}`;
+
+		setPhase('fixation');
+		await sleep(500);
+
+		document.getElementById('memory-items')!.textContent = memSet.join('   ');
+		setPhase('memory');
+		await sleep(1500);
+
+		setPhase('blank');
+		await sleep(500);
+
+		document.getElementById('probe-digit')!.textContent = String(probe);
+		setPhase('probe');
+		probeStartTime = performance.now();
+		awaitingResponse = true;
+	}
+
+	document.addEventListener('keydown', async (e) => {
+		if (!awaitingResponse) return;
+		const key = e.key.toLowerCase();
+		if (key !== 'f' && key !== 'j') return;
+
+		awaitingResponse = false;
+		const RT = performance.now() - probeStartTime;
+		const response = key === 'f';
+		const correct = response === currentPositive;
+
+		allResults.push({ setSize: trials[trialIndex], RT, correct, positive: currentPositive });
+		trialIndex++;
+
+		if (trialIndex >= trials.length) {
+			await sleep(200);
+			showResults();
+		} else {
+			await sleep(300);
+			await runTrial();
+		}
+	});
+
+	function startBatch() {
+		trials = buildTrials();
+		trialIndex = 0;
+		setPhase('fixation');
+		runTrial();
+	}
+
+	document.getElementById('start-btn')!.addEventListener('click', () => {
+		startBatch();
+	});
+
+	document.getElementById('more-btn')!.addEventListener('click', () => {
+		startBatch();
+	});
+
+	document.getElementById('reset-btn')!.addEventListener('click', () => {
+		allResults.length = 0;
+		document.getElementById('trial-counter')!.textContent = '';
+		setPhase('start');
+	});
+
+	function showResults() {
+		setPhase('results');
+		const correct = allResults.filter(r => r.correct).length;
+		document.getElementById('accuracy')!.textContent = `${Math.round(correct / allResults.length * 100)}%`;
+		document.getElementById('total-trials')!.textContent = String(allResults.length);
+		drawChart();
+	}
+
+	function drawChart() {
+		const canvas = document.getElementById('rt-chart') as HTMLCanvasElement;
+		const dpr = window.devicePixelRatio || 1;
+		const W = 560, H = 360;
+		canvas.style.width = W + 'px';
+		canvas.style.height = H + 'px';
+		canvas.width = W * dpr;
+		canvas.height = H * dpr;
+		const ctx = canvas.getContext('2d')!;
+		ctx.scale(dpr, dpr);
+
+		const pad = { top: 30, right: 40, bottom: 60, left: 80 };
+		const cW = W - pad.left - pad.right;
+		const cH = H - pad.top - pad.bottom;
+
+		const means: Record<string, Record<number, number | null>> = { yes: {}, no: {} };
+		SET_SIZES.forEach(s => {
+			const yes = allResults.filter(r => r.setSize === s && r.positive && r.correct);
+			const no  = allResults.filter(r => r.setSize === s && !r.positive && r.correct);
+			means.yes[s] = yes.length ? yes.reduce((a,b) => a + b.RT, 0) / yes.length : null;
+			means.no[s]  = no.length  ? no.reduce((a,b) => a + b.RT, 0) / no.length   : null;
+		});
+
+		const allVals = [...Object.values(means.yes), ...Object.values(means.no)].filter((v): v is number => v !== null);
+		if (!allVals.length) return;
+
+		const minY = Math.min(...allVals) * 0.85;
+		const maxY = Math.max(...allVals) * 1.12;
+
+		const xPos = (s: number) => pad.left + (s - 1) / 5 * cW;
+		const yPos = (rt: number) => pad.top + cH - (rt - minY) / (maxY - minY) * cH;
+
+		ctx.fillStyle = '#F6F3EE';
+		ctx.fillRect(0, 0, W, H);
+
+		ctx.strokeStyle = '#D6D1C9';
+		ctx.lineWidth = 1;
+		for (let i = 0; i <= 4; i++) {
+			const y = pad.top + i * cH / 4;
+			ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + cW, y); ctx.stroke();
+			const rt = maxY - i * (maxY - minY) / 4;
+			ctx.fillStyle = '#8A8680';
+			ctx.font = '12px "Instrument Sans", system-ui, sans-serif';
+			ctx.textAlign = 'right';
+			ctx.fillText(Math.round(rt) + 'ms', pad.left - 8, y + 4);
+		}
+
+		ctx.fillStyle = '#8A8680';
+		ctx.textAlign = 'center';
+		SET_SIZES.forEach(s => ctx.fillText(String(s), xPos(s), pad.top + cH + 20));
+		ctx.fillText('Set size', pad.left + cW / 2, pad.top + cH + 44);
+
+		ctx.save();
+		ctx.translate(18, pad.top + cH / 2);
+		ctx.rotate(-Math.PI / 2);
+		ctx.textAlign = 'center';
+		ctx.fillText('Response time (ms)', 0, 0);
+		ctx.restore();
+
+		ctx.strokeStyle = '#D6D1C9';
+		ctx.lineWidth = 1;
+		ctx.beginPath();
+		ctx.moveTo(pad.left, pad.top); ctx.lineTo(pad.left, pad.top + cH);
+		ctx.lineTo(pad.left + cW, pad.top + cH); ctx.stroke();
+
+		const series = [
+			{ data: means.yes, color: '#2D6A4F', label: 'In set (F)' },
+			{ data: means.no,  color: '#8A8680', label: 'Not in set (J)' },
+		];
+
+		series.forEach(({ data, color }) => {
+			ctx.strokeStyle = color;
+			ctx.lineWidth = 2;
+			let started = false;
+			ctx.beginPath();
+			SET_SIZES.forEach(s => {
+				const v = data[s];
+				if (v !== null) {
+					started ? ctx.lineTo(xPos(s), yPos(v)) : ctx.moveTo(xPos(s), yPos(v));
+					started = true;
+				}
+			});
+			ctx.stroke();
+
+			SET_SIZES.forEach(s => {
+				const v = data[s];
+				if (v !== null) {
+					ctx.fillStyle = color;
+					ctx.beginPath();
+					ctx.arc(xPos(s), yPos(v), 5, 0, Math.PI * 2);
+					ctx.fill();
+				}
+			});
+		});
+
+		const lx = pad.left + cW - 130, ly = pad.top + 16;
+		series.forEach(({ color, label }, i) => {
+			ctx.fillStyle = color;
+			ctx.fillRect(lx, ly + i * 24 - 1, 18, 3);
+			ctx.fillStyle = '#1A1917';
+			ctx.font = '12px "Instrument Sans", system-ui, sans-serif';
+			ctx.textAlign = 'left';
+			ctx.fillText(label, lx + 24, ly + i * 24 + 4);
+		});
+	}
+</script>
