@@ -16,9 +16,9 @@ import { SITE_TITLE } from '../consts';
 			<h1>Psychophysics</h1>
 			<p>Interactive demonstrations of classic psychophysics experiments.</p>
 			<ul class="task-list">
-				<li><a href="/psychophysics/sternberg">Sternberg Memory Task</a> — how fast can you scan your short-term memory?</li>
-				<li><a href="/psychophysics/shepard-metzler">Shepard-Metzler Mental Rotation</a> — how do you rotate objects in your mind?</li>
-					<li><a href="/psychophysics/numerosity">Numerosity Discrimination</a> — measure your approximate number sense and Weber fraction.</li>
+				<li><a href="/psychophysics/sternberg"><span class="task-name">Sternberg Memory Task</span> — how fast can you scan your short-term memory?</a></li>
+				<li><a href="/psychophysics/shepard-metzler"><span class="task-name">Shepard-Metzler Mental Rotation</span> — how do you rotate objects in your mind?</a></li>
+				<li><a href="/psychophysics/numerosity"><span class="task-name">Numerosity Discrimination</span> — measure your approximate number sense and Weber fraction.</a></li>
 			</ul>
 		</main>
 		<Footer />
@@ -35,7 +35,6 @@ import { SITE_TITLE } from '../consts';
 		gap: 1rem;
 	}
 	.task-list li {
-		padding: 1.25rem 1.5rem;
 		border: 1px solid var(--rule);
 		border-radius: 2px;
 		transition: border-color 0.2s;
@@ -44,13 +43,26 @@ import { SITE_TITLE } from '../consts';
 		border-color: var(--accent);
 	}
 	.task-list a {
+		display: block;
+		padding: 1.25rem 1.5rem;
+		font-family: var(--sans);
+		font-size: 0.95rem;
+		color: var(--fg-muted);
+		font-weight: 400;
+	}
+	.task-list a:hover {
+		text-decoration: none;
+		color: var(--fg-muted);
+	}
+	.task-list .task-name {
 		font-family: var(--serif);
 		font-size: 1.1rem;
 		color: var(--fg);
 		font-weight: 500;
+		display: block;
+		margin-bottom: 0.25rem;
 	}
-	.task-list a:hover {
-		text-decoration: none;
+	.task-list li:hover .task-name {
 		color: var(--accent);
 	}
 </style>
