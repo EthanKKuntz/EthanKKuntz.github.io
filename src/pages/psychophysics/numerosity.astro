@@ -31,7 +31,7 @@ import { SITE_TITLE } from '../../consts';
 			</p>
 			<p>
 				Two groups of dots appear briefly. Judge which side has more.
-				Press <kbd>F</kbd> for left, <kbd>J</kbd> for right.
+				Press <kbd>F</kbd> for left, <kbd>J</kbd> for right. On mobile, use the buttons.
 			</p>
 
 			<div id="task">
@@ -50,6 +50,10 @@ import { SITE_TITLE } from '../../consts';
 				<div id="phase-trial" class="phase" hidden>
 					<canvas id="dot-canvas" class="dot-canvas"></canvas>
 					<p class="hint"><kbd>F</kbd> Left has more &emsp; <kbd>J</kbd> Right has more</p>
+					<div class="response-buttons">
+						<button id="btn-left" class="response-btn">Left</button>
+						<button id="btn-right" class="response-btn secondary">Right</button>
+					</div>
 				</div>
 
 				<div id="phase-results" class="phase" hidden>
@@ -138,6 +142,18 @@ import { SITE_TITLE } from '../../consts';
 		transition: background 0.2s, color 0.2s;
 	}
 	button:hover { background: var(--accent); color: var(--bg); }
+	.response-buttons {
+		display: flex;
+		gap: 1rem;
+		flex-wrap: wrap;
+		justify-content: center;
+	}
+	.response-btn {
+		padding: 0.9rem 2.5rem;
+		font-size: 1rem;
+		min-width: 130px;
+		touch-action: manipulation;
+	}
 	.result-summary { font-size: 1rem; color: var(--fg-muted); margin: 0; }
 	.result-weber { font-size: 0.9rem; color: var(--fg-muted); margin: 0; }
 	.result-actions { display: flex; gap: 1rem; margin-top: 1.5rem; }
@@ -274,17 +290,14 @@ import { SITE_TITLE } from '../../consts';
 		clearTimeoutId = setTimeout(clearCanvas, 1500);
 	}
 
-	document.addEventListener('keydown', async (e) => {
+	async function handleResponse(key: string) {
 		if (!awaitingResponse) return;
-		const key = e.key.toLowerCase();
 		if (key !== 'f' && key !== 'j') return;
 		awaitingResponse = false;
 		if (clearTimeoutId !== null) { clearTimeout(clearTimeoutId); clearTimeoutId = null; }
-
 		const RT = performance.now() - probeStartTime;
 		allResults.push({ ratioIdx: trials[trialIndex].ratioIdx, RT, correct: (key === 'f') === currentLeftMore });
 		trialIndex++;
-
 		if (trialIndex >= trials.length) {
 			await sleep(200);
 			showResults();
@@ -292,7 +305,11 @@ import { SITE_TITLE } from '../../consts';
 			await sleep(150);
 			await runTrial();
 		}
-	});
+	}
+
+	document.addEventListener('keydown', (e) => handleResponse(e.key.toLowerCase()));
+	document.getElementById('btn-left')!.addEventListener('click', () => handleResponse('f'));
+	document.getElementById('btn-right')!.addEventListener('click', () => handleResponse('j'));
 
 	function startBatch() {
 		trials = buildTrials();

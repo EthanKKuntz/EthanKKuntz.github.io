@@ -49,6 +49,7 @@ import sternberg1 from '../../assets/sternberg1.gif';
 			<p>
 				You'll be shown a set of numbers for 1.5 seconds, which will disappear and be replaced with
 				a single number. Press <kbd>F</kbd> if this number was in the set, <kbd>J</kbd> if not.
+				On mobile, use the buttons.
 			</p>
 
 			<div id="task">
@@ -79,6 +80,10 @@ import sternberg1 from '../../assets/sternberg1.gif';
 				<div id="phase-probe" class="phase" hidden>
 					<div id="probe-digit" class="display-item"></div>
 					<p class="hint"><kbd>F</kbd> Yes &emsp; <kbd>J</kbd> No</p>
+					<div class="response-buttons">
+						<button id="btn-yes" class="response-btn">Yes</button>
+						<button id="btn-no" class="response-btn secondary">No</button>
+					</div>
 				</div>
 
 				<div id="phase-results" class="phase" hidden>
@@ -207,6 +212,18 @@ import sternberg1 from '../../assets/sternberg1.gif';
 		background: var(--rule);
 		color: var(--fg);
 	}
+	.response-buttons {
+		display: flex;
+		gap: 1rem;
+		flex-wrap: wrap;
+		justify-content: center;
+	}
+	.response-btn {
+		padding: 0.9rem 2.5rem;
+		font-size: 1rem;
+		min-width: 130px;
+		touch-action: manipulation;
+	}
 	.result-summary {
 		font-size: 1rem;
 		color: var(--fg-muted);
@@ -303,19 +320,14 @@ import sternberg1 from '../../assets/sternberg1.gif';
 		awaitingResponse = true;
 	}
 
-	document.addEventListener('keydown', async (e) => {
+	async function handleResponse(key: string) {
 		if (!awaitingResponse) return;
-		const key = e.key.toLowerCase();
 		if (key !== 'f' && key !== 'j') return;
-
 		awaitingResponse = false;
 		const RT = performance.now() - probeStartTime;
-		const response = key === 'f';
-		const correct = response === currentPositive;
-
+		const correct = (key === 'f') === currentPositive;
 		allResults.push({ setSize: trials[trialIndex], RT, correct, positive: currentPositive });
 		trialIndex++;
-
 		if (trialIndex >= trials.length) {
 			await sleep(200);
 			showResults();
@@ -323,7 +335,11 @@ import sternberg1 from '../../assets/sternberg1.gif';
 			await sleep(300);
 			await runTrial();
 		}
-	});
+	}
+
+	document.addEventListener('keydown', (e) => handleResponse(e.key.toLowerCase()));
+	document.getElementById('btn-yes')!.addEventListener('click', () => handleResponse('f'));
+	document.getElementById('btn-no')!.addEventListener('click', () => handleResponse('j'));
 
 	function startBatch() {
 		trials = buildTrials();

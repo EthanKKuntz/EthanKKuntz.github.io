@@ -23,7 +23,7 @@ import { SITE_TITLE } from '../../consts';
 			<p>
 				Judge whether these shapes are the
 				<strong>same shape</strong> or <strong>mirror images</strong>.
-				Press <kbd>F</kbd> for same, <kbd>J</kbd> for mirror.
+				Press <kbd>F</kbd> for same, <kbd>J</kbd> for mirror. On mobile, use the buttons.
 			</p>
 			<p class="attribution">
 				Stimuli from Ganis, G. &amp; Kievit, R. (2015).
@@ -46,6 +46,10 @@ import { SITE_TITLE } from '../../consts';
 					<p id="trial-counter" class="counter"></p>
 					<img id="stimulus-img" class="stimulus-img" alt="Mental rotation stimulus" />
 					<p class="hint"><kbd>F</kbd> Same &emsp; <kbd>J</kbd> Mirror</p>
+					<div class="response-buttons">
+						<button id="btn-same" class="response-btn">Same</button>
+						<button id="btn-mirror" class="response-btn secondary">Mirror</button>
+					</div>
 				</div>
 
 				<div id="screen-results" class="screen" hidden>
@@ -131,6 +135,18 @@ import { SITE_TITLE } from '../../consts';
 		transition: background 0.2s, color 0.2s;
 	}
 	button:hover { background: var(--accent); color: var(--bg); }
+	.response-buttons {
+		display: flex;
+		gap: 1rem;
+		flex-wrap: wrap;
+		justify-content: center;
+	}
+	.response-btn {
+		padding: 0.9rem 2.5rem;
+		font-size: 1rem;
+		min-width: 130px;
+		touch-action: manipulation;
+	}
 	.result-summary { font-size: 1rem; color: var(--fg-muted); margin: 0; }
 	.result-rotation { font-size: 0.9rem; color: var(--fg-muted); margin: 0.3rem 0 0; }
 	.result-note { font-size: 0.85rem; color: var(--fg-muted); margin: 1rem 0 0; }
@@ -193,9 +209,8 @@ import { SITE_TITLE } from '../../consts';
 		};
 	}
 
-	document.addEventListener('keydown', (e) => {
+	function handleResponse(key: string) {
 		if (!awaitingResponse) return;
-		const key = e.key.toLowerCase();
 		if (key !== 'f' && key !== 'j') return;
 		awaitingResponse = false;
 		const RT = performance.now() - probeStartTime;
@@ -203,7 +218,11 @@ import { SITE_TITLE } from '../../consts';
 		allResults.push({ type: currentType, angle: currentAngle, RT, correct: response === currentType });
 		trialIndex++;
 		setTimeout(startTrial, 150);
-	});
+	}
+
+	document.addEventListener('keydown', (e) => handleResponse(e.key.toLowerCase()));
+	document.getElementById('btn-same')!.addEventListener('click', () => handleResponse('f'));
+	document.getElementById('btn-mirror')!.addEventListener('click', () => handleResponse('j'));
 
 	function startBatch() {
 		trials = buildTrials(getTrialCount());
