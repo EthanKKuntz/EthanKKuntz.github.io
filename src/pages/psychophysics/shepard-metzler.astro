@@ -15,16 +15,20 @@ import { SITE_TITLE } from '../../consts';
 		<main>
 			<h1>Shepard-Metzler Mental Rotation</h1>
 			<p>
-				In 1971, Roger Shepard and Jacqueline Metzler showed that people mentally rotate objects
-				at a constant angular velocity — roughly 60° per second. Response time for judging whether
-				two shapes are the same increases linearly with the angle between them, as if the mind
-				is literally turning one object to match the other. The original experiment used 3D objects;
-				the same result holds in 2D.
+				In 1971, Roger Shepard and Jacqueline Metzler ran an experiment on mental rotation. They showed people a 3D object and the same object after a rotation, and perhaps a reflection. 
+				Response time for judging whether the two shapes are the same or mirror images increases linearly with the angle between them, as if the mind
+				is literally turning one object to match the other. People typically rotate at about 60 degrees/second, and rotation rate weakly (r ≈ .25) correlates IQ.
 			</p>
+
 			<p>
-				Two shapes appear side by side at different orientations. Judge whether they are the
+				Judge whether these shapes are the
 				<strong>same shape</strong> or <strong>mirror images</strong>.
 				Press <kbd>F</kbd> for same, <kbd>J</kbd> for mirror.
+			</p>
+			<p class="attribution">
+				Stimuli from Ganis, G. &amp; Kievit, R. (2015).
+				<a href="https://openpsychologydata.metajnl.com/articles/10.5334/jopd.ai">A New Set of Three-Dimensional Shapes for Investigating Mental Rotation Processes</a>.
+				<em>Journal of Open Psychology Data</em>, 3(1). CC BY 4.0.
 			</p>
 
 			<div id="task">
@@ -40,15 +44,13 @@ import { SITE_TITLE } from '../../consts';
 
 				<div id="screen-trial" class="screen" hidden>
 					<p id="trial-counter" class="counter"></p>
-					<div id="shapes-row">
-						<canvas id="canvas-left" class="shape-canvas"></canvas>
-						<canvas id="canvas-right" class="shape-canvas"></canvas>
-					</div>
+					<img id="stimulus-img" class="stimulus-img" alt="Mental rotation stimulus" />
 					<p class="hint"><kbd>F</kbd> Same &emsp; <kbd>J</kbd> Mirror</p>
 				</div>
 
 				<div id="screen-results" class="screen" hidden>
 					<p class="result-summary">Accuracy: <strong id="accuracy"></strong> &ensp; Trials: <strong id="total-trials"></strong></p>
+					<p class="result-rotation">Rotation rate: <strong id="rotation-rate"></strong></p>
 					<p class="result-note">Mean RT for correct "same" responses by rotation angle</p>
 					<canvas id="rt-chart"></canvas>
 					<div class="result-actions">
@@ -70,6 +72,10 @@ import { SITE_TITLE } from '../../consts';
 		border: 1px solid var(--fg-muted);
 		border-radius: 3px;
 		padding: 2px 6px;
+	}
+	.attribution {
+		font-size: 0.82rem;
+		color: var(--fg-muted);
 	}
 	#task { margin-top: 2.5rem; }
 	.screen {
@@ -103,15 +109,8 @@ import { SITE_TITLE } from '../../consts';
 		letter-spacing: 0.04em;
 		margin: 0;
 	}
-	#shapes-row {
-		display: flex;
-		gap: 3rem;
-		justify-content: center;
-		align-items: center;
-	}
-	.shape-canvas {
-		width: 240px;
-		height: 240px;
+	.stimulus-img {
+		max-width: 100%;
 		border: 1px solid var(--rule);
 		border-radius: 2px;
 		display: block;
@@ -133,99 +132,37 @@ import { SITE_TITLE } from '../../consts';
 	}
 	button:hover { background: var(--accent); color: var(--bg); }
 	.result-summary { font-size: 1rem; color: var(--fg-muted); margin: 0; }
-	.result-note { font-size: 0.85rem; color: var(--fg-muted); margin: 0; }
+	.result-rotation { font-size: 0.9rem; color: var(--fg-muted); margin: 0.3rem 0 0; }
+	.result-note { font-size: 0.85rem; color: var(--fg-muted); margin: 1rem 0 0; }
 	.result-actions { display: flex; gap: 1rem; margin-top: 1.5rem; }
 	#rt-chart { max-width: 100%; }
 	[hidden] { display: none !important; }
 </style>
 
 <script>
-	const ANGLES = [0, 40, 80, 120, 160];
-	const CANVAS_PX = 240;
+	const ANGLES = [0, 50, 100, 150];
+	const N_OBJECTS = 48;
 	const dpr = window.devicePixelRatio || 1;
 
-	type Pos = [number, number];
-
-	function generateShape(): Pos[] {
-		const dirs: Pos[] = [[1,0],[0,1],[-1,0],[0,-1]];
-		while (true) {
-			const positions: Pos[] = [[0,0]];
-			let pos: Pos = [0,0];
-			let lastDir: Pos | null = null;
-			for (let i = 0; i < 9; i++) {
-				const valid = dirs.filter(d => {
-					if (lastDir && d[0] === -lastDir[0] && d[1] === -lastDir[1]) return false;
-					const n: Pos = [pos[0]+d[0], pos[1]+d[1]];
-					return !positions.some(p => p[0]===n[0] && p[1]===n[1]);
-				});
-				if (!valid.length) break;
-				const d = valid[Math.floor(Math.random() * valid.length)] as Pos;
-				pos = [pos[0]+d[0], pos[1]+d[1]];
-				positions.push([...pos] as Pos);
-				lastDir = d;
-			}
-			const xs = positions.map(p => p[0]);
-			const ys = positions.map(p => p[1]);
-			if (positions.length >= 8 &&
-				Math.max(...xs) - Math.min(...xs) >= 2 &&
-				Math.max(...ys) - Math.min(...ys) >= 2) return positions;
-		}
-	}
-
-	function getCtx(id: string): CanvasRenderingContext2D {
-		const el = document.getElementById(id) as HTMLCanvasElement;
-		el.width = CANVAS_PX * dpr;
-		el.height = CANVAS_PX * dpr;
-		const ctx = el.getContext('2d')!;
-		ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-		return ctx;
-	}
-
-	function drawShape(ctx: CanvasRenderingContext2D, positions: Pos[], mirrored: boolean, angleDeg: number) {
-		const W = CANVAS_PX, H = CANVAS_PX;
-		ctx.fillStyle = '#F6F3EE';
-		ctx.fillRect(0, 0, W, H);
-
-		const xs = positions.map(p => p[0]);
-		const ys = positions.map(p => p[1]);
-		const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
-		const cy = (Math.min(...ys) + Math.max(...ys)) / 2;
-		const span = Math.max(Math.max(...xs) - Math.min(...xs) + 1, Math.max(...ys) - Math.min(...ys) + 1);
-		const cell = W * 0.72 / span;
-		const s = cell * 0.88;
-
-		ctx.save();
-		ctx.translate(W / 2, H / 2);
-		ctx.rotate(angleDeg * Math.PI / 180);
-		if (mirrored) ctx.scale(-1, 1);
-
-		positions.forEach(([x, y]) => {
-			const px = (x - cx) * cell;
-			const py = (y - cy) * cell;
-			ctx.fillStyle = '#4A7E9F';
-			ctx.fillRect(px - s/2, py - s/2, s, s);
-			ctx.strokeStyle = '#1A3A50';
-			ctx.lineWidth = 1.5;
-			ctx.strokeRect(px - s/2, py - s/2, s, s);
-		});
-
-		ctx.restore();
+	function imageUrl(obj: number, angle: number, type: 'same' | 'different'): string {
+		return `/sm/${obj}_${angle}${type === 'different' ? '_R' : ''}.jpg`;
 	}
 
 	function getTrialCount(): number {
 		return Math.max(5, Math.min(100, parseInt((document.getElementById('trial-count') as HTMLInputElement).value) || 30));
 	}
 
-	function buildTrials(n: number) {
-		const same = Math.round(n * 0.5);
-		const diff = n - same;
-		const trials: { type: 'same' | 'different'; angle: number }[] = [];
-		for (let i = 0; i < same; i++) trials.push({ type: 'same', angle: ANGLES[i % ANGLES.length] });
-		for (let i = 0; i < diff; i++) trials.push({ type: 'different', angle: ANGLES[Math.floor(Math.random() * ANGLES.length)] });
+	function buildTrials(n: number): { obj: number; angle: number; type: 'same' | 'different' }[] {
+		const halfSame = Math.round(n / 2);
+		const trials = Array.from({ length: n }, (_, i) => ({
+			obj: Math.floor(Math.random() * N_OBJECTS) + 1,
+			angle: ANGLES[Math.floor(Math.random() * ANGLES.length)],
+			type: (i < halfSame ? 'same' : 'different') as 'same' | 'different',
+		}));
 		return trials.sort(() => Math.random() - 0.5);
 	}
 
-	let trials: { type: 'same' | 'different'; angle: number }[] = [];
+	let trials: { obj: number; angle: number; type: 'same' | 'different' }[] = [];
 	let trialIndex = 0;
 	let awaitingResponse = false;
 	let probeStartTime = 0;
@@ -247,16 +184,13 @@ import { SITE_TITLE } from '../../consts';
 		document.getElementById('trial-counter')!.textContent =
 			`Trial ${allResults.length + 1} of ${allResults.length + trials.length - trialIndex}`;
 
-		const shape = generateShape();
-		const mirrored = trial.type === 'different';
-		const base = Math.random() * 360;
-		const sign = Math.random() < 0.5 ? 1 : -1;
+		const img = document.getElementById('stimulus-img') as HTMLImageElement;
+		img.src = imageUrl(trial.obj, trial.angle, trial.type);
 
-		drawShape(getCtx('canvas-left'), shape, false, base);
-		drawShape(getCtx('canvas-right'), shape, mirrored, base + sign * trial.angle);
-
-		probeStartTime = performance.now();
-		awaitingResponse = true;
+		img.onload = () => {
+			probeStartTime = performance.now();
+			awaitingResponse = true;
+		};
 	}
 
 	document.addEventListener('keydown', (e) => {
@@ -285,11 +219,31 @@ import { SITE_TITLE } from '../../consts';
 		showScreen('screen-intro');
 	});
 
+	function computeRotationRate(): string {
+		const points = ANGLES.map(a => {
+			const ts = allResults.filter(r => r.type === 'same' && r.angle === a && r.correct);
+			return ts.length ? { x: a, y: ts.reduce((s, r) => s + r.RT, 0) / ts.length } : null;
+		}).filter((p): p is { x: number; y: number } => p !== null);
+
+		if (points.length < 2) return 'insufficient data';
+
+		const xBar = points.reduce((s, p) => s + p.x, 0) / points.length;
+		const yBar = points.reduce((s, p) => s + p.y, 0) / points.length;
+		const num = points.reduce((s, p) => s + (p.x - xBar) * (p.y - yBar), 0);
+		const den = points.reduce((s, p) => s + (p.x - xBar) ** 2, 0);
+		if (den === 0) return 'insufficient data';
+
+		const slope = num / den;
+		if (slope <= 0) return 'no clear trend yet — try more trials';
+		return `${Math.round(1000 / slope)} °/sec (${Math.round(slope)} ms/°)`;
+	}
+
 	function showResults() {
 		showScreen('screen-results');
 		const correct = allResults.filter(r => r.correct).length;
 		document.getElementById('accuracy')!.textContent = `${Math.round(correct / allResults.length * 100)}%`;
 		document.getElementById('total-trials')!.textContent = String(allResults.length);
+		document.getElementById('rotation-rate')!.textContent = computeRotationRate();
 		drawChart();
 	}
 
@@ -318,7 +272,7 @@ import { SITE_TITLE } from '../../consts';
 
 		const minY = Math.min(...vals) * 0.85;
 		const maxY = Math.max(...vals) * 1.12;
-		const xPos = (a: number) => pad.left + a / 160 * cW;
+		const xPos = (a: number) => pad.left + a / 150 * cW;
 		const yPos = (rt: number) => pad.top + cH - (rt - minY) / (maxY - minY) * cH;
 
 		ctx.fillStyle = '#F6F3EE';
