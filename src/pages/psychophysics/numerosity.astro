@@ -15,17 +15,23 @@ import { SITE_TITLE } from '../../consts';
 		<main>
 			<h1>Numerosity Discrimination</h1>
 			<p>
-				Your approximate number system (ANS) lets you estimate quantities without counting.
-				Its precision is captured by the Weber fraction: the minimum proportional difference
-				needed for reliable discrimination. If your Weber fraction is 0.2, you need two groups
-				to differ by at least 20% to tell them apart at threshold. Adults typically land around
-				0.15–0.25, with wide individual variation.
+				
+				Your approximate number system (ANS) lets you quickly estimate quantities without counting.
+				Its precision is described by the Weber fraction. If your Weber fraction is 0.2, and two groups of dots
+				have a ratio of 10:12, you have a 75% chance of telling which is larger.
+				
+			</p>
+			<p>
+				For numerosity, your ability to detect differences is proportional to the size of the stimulus, not the absolute value. Your ability to disitinguish 
+				20 from 40 is the same as your ability to distinguish 200 from 400. In fewer words, you notice percent differences, not absolute differences.
+			</p>
+			<p>	
+				There is a very weak correlation, roughly r = -.2, between intelligence and Weber fraction, and the typical adult Weber fraction is around .15-.25, with wide variation. You can test yours below!
+			</p>
 			</p>
 			<p>
 				Two groups of dots appear briefly. Judge which side has more.
-				Press <kbd>F</kbd> for left, <kbd>J</kbd> for right — you can respond while the dots are
-				still showing. Note that total dot area covaries with numerosity here — the classic confound
-				between numerosity and visual texture density.
+				Press <kbd>F</kbd> for left, <kbd>J</kbd> for right.
 			</p>
 
 			<div id="task">
