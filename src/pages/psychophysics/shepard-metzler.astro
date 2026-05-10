@@ -15,14 +15,16 @@ import { SITE_TITLE } from '../../consts';
 		<main>
 			<h1>Shepard-Metzler Mental Rotation</h1>
 			<p>
-				In 1971, Roger Shepard and Jacqueline Metzler showed that people mentally rotate 3D objects
+				In 1971, Roger Shepard and Jacqueline Metzler showed that people mentally rotate objects
 				at a constant angular velocity — roughly 60° per second. Response time for judging whether
 				two shapes are the same increases linearly with the angle between them, as if the mind
-				is literally turning one object to match the other.
+				is literally turning one object to match the other. The original experiment used 3D objects;
+				the same result holds in 2D.
 			</p>
 			<p>
-				Two 3D shapes appear side by side. Judge whether they are the <strong>same shape</strong> at different
-				orientations, or <strong>mirror images</strong>. Press <kbd>F</kbd> for same, <kbd>J</kbd> for different.
+				Two shapes appear side by side at different orientations. Judge whether they are the
+				<strong>same shape</strong> or <strong>mirror images</strong>.
+				Press <kbd>F</kbd> for same, <kbd>J</kbd> for mirror.
 			</p>
 
 			<div id="task">
@@ -39,15 +41,15 @@ import { SITE_TITLE } from '../../consts';
 				<div id="screen-trial" class="screen" hidden>
 					<p id="trial-counter" class="counter"></p>
 					<div id="shapes-row">
-						<div id="canvas-left" class="canvas-wrap"></div>
-						<div id="canvas-right" class="canvas-wrap"></div>
+						<canvas id="canvas-left" class="shape-canvas"></canvas>
+						<canvas id="canvas-right" class="shape-canvas"></canvas>
 					</div>
-					<p class="hint"><kbd>F</kbd> Same &emsp; <kbd>J</kbd> Different (mirror)</p>
+					<p class="hint"><kbd>F</kbd> Same &emsp; <kbd>J</kbd> Mirror</p>
 				</div>
 
 				<div id="screen-results" class="screen" hidden>
 					<p class="result-summary">Accuracy: <strong id="accuracy"></strong> &ensp; Trials: <strong id="total-trials"></strong></p>
-					<p class="result-note">RT for "same" correct responses by rotation angle</p>
+					<p class="result-note">Mean RT for correct "same" responses by rotation angle</p>
 					<canvas id="rt-chart"></canvas>
 					<div class="result-actions">
 						<button id="more-btn">Run more trials</button>
@@ -83,11 +85,7 @@ import { SITE_TITLE } from '../../consts';
 		font-size: 0.9rem;
 		color: var(--fg-muted);
 	}
-	.settings label {
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-	}
+	.settings label { display: flex; align-items: center; gap: 0.75rem; }
 	.settings input {
 		width: 70px;
 		padding: 0.3rem 0.5rem;
@@ -111,19 +109,14 @@ import { SITE_TITLE } from '../../consts';
 		justify-content: center;
 		align-items: center;
 	}
-	.canvas-wrap {
-		width: 280px;
-		height: 280px;
+	.shape-canvas {
+		width: 240px;
+		height: 240px;
 		border: 1px solid var(--rule);
 		border-radius: 2px;
-		overflow: hidden;
+		display: block;
 	}
-	.canvas-wrap canvas { display: block; }
-	.hint {
-		font-size: 0.9rem;
-		color: var(--fg-muted);
-		margin: 0;
-	}
+	.hint { font-size: 0.9rem; color: var(--fg-muted); margin: 0; }
 	button {
 		font-family: var(--sans);
 		font-size: 0.85rem;
@@ -139,8 +132,6 @@ import { SITE_TITLE } from '../../consts';
 		transition: background 0.2s, color 0.2s;
 	}
 	button:hover { background: var(--accent); color: var(--bg); }
-	button.secondary { color: var(--fg-muted); border-color: var(--rule); }
-	button.secondary:hover { background: var(--rule); color: var(--fg); }
 	.result-summary { font-size: 1rem; color: var(--fg-muted); margin: 0; }
 	.result-note { font-size: 0.85rem; color: var(--fg-muted); margin: 0; }
 	.result-actions { display: flex; gap: 1rem; margin-top: 1.5rem; }
@@ -148,262 +139,239 @@ import { SITE_TITLE } from '../../consts';
 	[hidden] { display: none !important; }
 </style>
 
-<script type="module" is:inline>
-import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
-
-const ANGLES = [0, 40, 80, 120, 160];
-
-// --- Shape generation ---
-function generateShape() {
-	const dirs = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
-	while (true) {
-		const positions = [[0,0,0]];
-		let pos = [0,0,0], lastDir = null;
-		for (let i = 0; i < 9; i++) {
-			const valid = dirs.filter(d => {
-				if (lastDir && d[0]===-lastDir[0] && d[1]===-lastDir[1] && d[2]===-lastDir[2]) return false;
-				const n = [pos[0]+d[0], pos[1]+d[1], pos[2]+d[2]];
-				return !positions.some(p => p[0]===n[0] && p[1]===n[1] && p[2]===n[2]);
-			});
-			if (!valid.length) break;
-			const d = valid[Math.floor(Math.random() * valid.length)];
-			pos = [pos[0]+d[0], pos[1]+d[1], pos[2]+d[2]];
-			positions.push([...pos]);
-			lastDir = d;
-		}
-		const xs = new Set(positions.map(p=>p[0]));
-		const ys = new Set(positions.map(p=>p[1]));
-		const zs = new Set(positions.map(p=>p[2]));
-		if (positions.length >= 8 && xs.size > 1 && ys.size > 1 && zs.size > 1) return positions;
-	}
-}
-
-// --- Three.js ---
-function createScene(container) {
-	const scene = new THREE.Scene();
-	scene.background = new THREE.Color(0xF6F3EE);
-	const w = container.clientWidth, h = container.clientHeight;
-	const camera = new THREE.PerspectiveCamera(40, w / h, 0.1, 100);
-	camera.position.set(9, 7, 11);
-	camera.lookAt(0, 0, 0);
-
-	scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-	const d1 = new THREE.DirectionalLight(0xffffff, 0.9);
-	d1.position.set(6, 10, 6); scene.add(d1);
-	const d2 = new THREE.DirectionalLight(0xffffff, 0.25);
-	d2.position.set(-5, -3, -5); scene.add(d2);
-
-	const renderer = new THREE.WebGLRenderer({ antialias: true });
-	renderer.setPixelRatio(window.devicePixelRatio);
-	renderer.setSize(w, h);
-	container.appendChild(renderer.domElement);
-	return { scene, camera, renderer };
-}
-
-function buildGroup(positions, mirrored = false) {
-	const group = new THREE.Group();
-	const mat = new THREE.MeshPhongMaterial({ color: 0x4A7E9F, shininess: 40 });
-	const edgeMat = new THREE.LineBasicMaterial({ color: 0x1A3A50 });
-	const geo = new THREE.BoxGeometry(0.88, 0.88, 0.88);
-	const edgeGeo = new THREE.EdgesGeometry(geo);
-
-	positions.forEach(([x, y, z]) => {
-		const px = mirrored ? -x : x;
-		const mesh = new THREE.Mesh(geo, mat);
-		mesh.position.set(px, y, z);
-		group.add(mesh);
-		const edges = new THREE.LineSegments(edgeGeo, edgeMat);
-		edges.position.set(px, y, z);
-		group.add(edges);
-	});
-
-	const box = new THREE.Box3().setFromObject(group);
-	const center = box.getCenter(new THREE.Vector3());
-	group.position.sub(center);
-	return group;
-}
-
-function renderShape(container, positions, mirrored, quaternion) {
-	while (container.firstChild) container.removeChild(container.firstChild);
-	const { scene, camera, renderer } = createScene(container);
-	const group = buildGroup(positions, mirrored);
-	if (quaternion) group.quaternion.copy(quaternion);
-	scene.add(group);
-	renderer.render(scene, camera);
-}
-
-// --- Trial management ---
-function getTrialCount() {
-	return Math.max(5, Math.min(100, parseInt(document.getElementById('trial-count').value) || 30));
-}
-
-function buildTrials(n) {
-	const same = Math.round(n * 0.5);
-	const diff = n - same;
-	const trials = [];
-	for (let i = 0; i < same; i++) {
-		trials.push({ type: 'same', angle: ANGLES[i % ANGLES.length] });
-	}
-	for (let i = 0; i < diff; i++) {
-		trials.push({ type: 'different', angle: ANGLES[Math.floor(Math.random() * ANGLES.length)] });
-	}
-	return trials.sort(() => Math.random() - 0.5);
-}
-
-let trials = [], trialIndex = 0;
-let awaitingResponse = false, probeStartTime = 0;
-let currentType = 'same', currentAngle = 0;
-const allResults = [];
-
-function showScreen(id) {
-	document.querySelectorAll('.screen').forEach(el => el.hidden = true);
-	document.getElementById(id).hidden = false;
-}
-
-function startTrial() {
-	if (trialIndex >= trials.length) { showResults(); return; }
-	const trial = trials[trialIndex];
-	currentType = trial.type;
-	currentAngle = trial.angle;
-
-	document.getElementById('trial-counter').textContent =
-		`Trial ${allResults.length + 1} of ${allResults.length + trials.length - trialIndex}`;
-
-	const shape = generateShape();
-	const mirrored = trial.type === 'different';
-
-	let quat = null;
-	if (trial.angle > 0) {
-		const axis = new THREE.Vector3(
-			Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5
-		).normalize();
-		quat = new THREE.Quaternion().setFromAxisAngle(axis, trial.angle * Math.PI / 180);
-	}
-
-	renderShape(document.getElementById('canvas-left'), shape, false, null);
-	renderShape(document.getElementById('canvas-right'), shape, mirrored, quat);
-
-	probeStartTime = performance.now();
-	awaitingResponse = true;
-}
-
-document.addEventListener('keydown', (e) => {
-	if (!awaitingResponse) return;
-	const key = e.key.toLowerCase();
-	if (key !== 'f' && key !== 'j') return;
-	awaitingResponse = false;
-	const RT = performance.now() - probeStartTime;
-	const response = key === 'f' ? 'same' : 'different';
-	allResults.push({ type: currentType, angle: currentAngle, RT, correct: response === currentType });
-	trialIndex++;
-	setTimeout(startTrial, 150);
-});
-
-function startBatch() {
-	trials = buildTrials(getTrialCount());
-	trialIndex = 0;
-	showScreen('screen-trial');
-	startTrial();
-}
-
-document.getElementById('start-btn').addEventListener('click', startBatch);
-document.getElementById('more-btn').addEventListener('click', startBatch);
-document.getElementById('reset-btn').addEventListener('click', () => {
-	allResults.length = 0;
-	showScreen('screen-intro');
-});
-
-function showResults() {
-	showScreen('screen-results');
-	const correct = allResults.filter(r => r.correct).length;
-	document.getElementById('accuracy').textContent = `${Math.round(correct / allResults.length * 100)}%`;
-	document.getElementById('total-trials').textContent = String(allResults.length);
-	drawChart();
-}
-
-function drawChart() {
-	const canvas = document.getElementById('rt-chart');
+<script>
+	const ANGLES = [0, 40, 80, 120, 160];
+	const CANVAS_PX = 240;
 	const dpr = window.devicePixelRatio || 1;
-	const W = 560, H = 360;
-	canvas.style.width = W + 'px';
-	canvas.style.height = H + 'px';
-	canvas.width = W * dpr;
-	canvas.height = H * dpr;
-	const ctx = canvas.getContext('2d');
-	ctx.scale(dpr, dpr);
 
-	const pad = { top: 30, right: 40, bottom: 60, left: 80 };
-	const cW = W - pad.left - pad.right;
-	const cH = H - pad.top - pad.bottom;
+	type Pos = [number, number];
 
-	const means = {};
-	ANGLES.forEach(angle => {
-		const ts = allResults.filter(r => r.type === 'same' && r.angle === angle && r.correct);
-		means[angle] = ts.length ? ts.reduce((a,b) => a + b.RT, 0) / ts.length : null;
-	});
-
-	const vals = Object.values(means).filter(v => v !== null);
-	if (!vals.length) return;
-
-	const minY = Math.min(...vals) * 0.85;
-	const maxY = Math.max(...vals) * 1.12;
-	const xPos = a => pad.left + a / 160 * cW;
-	const yPos = rt => pad.top + cH - (rt - minY) / (maxY - minY) * cH;
-
-	ctx.fillStyle = '#F6F3EE';
-	ctx.fillRect(0, 0, W, H);
-
-	ctx.strokeStyle = '#D6D1C9';
-	ctx.lineWidth = 1;
-	for (let i = 0; i <= 4; i++) {
-		const y = pad.top + i * cH / 4;
-		ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + cW, y); ctx.stroke();
-		const rt = maxY - i * (maxY - minY) / 4;
-		ctx.fillStyle = '#8A8680';
-		ctx.font = '12px "Instrument Sans", system-ui, sans-serif';
-		ctx.textAlign = 'right';
-		ctx.fillText(Math.round(rt) + 'ms', pad.left - 8, y + 4);
+	function generateShape(): Pos[] {
+		const dirs: Pos[] = [[1,0],[0,1],[-1,0],[0,-1]];
+		while (true) {
+			const positions: Pos[] = [[0,0]];
+			let pos: Pos = [0,0];
+			let lastDir: Pos | null = null;
+			for (let i = 0; i < 9; i++) {
+				const valid = dirs.filter(d => {
+					if (lastDir && d[0] === -lastDir[0] && d[1] === -lastDir[1]) return false;
+					const n: Pos = [pos[0]+d[0], pos[1]+d[1]];
+					return !positions.some(p => p[0]===n[0] && p[1]===n[1]);
+				});
+				if (!valid.length) break;
+				const d = valid[Math.floor(Math.random() * valid.length)] as Pos;
+				pos = [pos[0]+d[0], pos[1]+d[1]];
+				positions.push([...pos] as Pos);
+				lastDir = d;
+			}
+			const xs = positions.map(p => p[0]);
+			const ys = positions.map(p => p[1]);
+			if (positions.length >= 8 &&
+				Math.max(...xs) - Math.min(...xs) >= 2 &&
+				Math.max(...ys) - Math.min(...ys) >= 2) return positions;
+		}
 	}
 
-	ctx.fillStyle = '#8A8680';
-	ctx.textAlign = 'center';
-	ANGLES.forEach(a => ctx.fillText(a + '°', xPos(a), pad.top + cH + 20));
-	ctx.fillText('Rotation angle', pad.left + cW / 2, pad.top + cH + 44);
+	function getCtx(id: string): CanvasRenderingContext2D {
+		const el = document.getElementById(id) as HTMLCanvasElement;
+		el.width = CANVAS_PX * dpr;
+		el.height = CANVAS_PX * dpr;
+		const ctx = el.getContext('2d')!;
+		ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+		return ctx;
+	}
 
-	ctx.save();
-	ctx.translate(18, pad.top + cH / 2);
-	ctx.rotate(-Math.PI / 2);
-	ctx.textAlign = 'center';
-	ctx.fillText('Response time (ms)', 0, 0);
-	ctx.restore();
+	function drawShape(ctx: CanvasRenderingContext2D, positions: Pos[], mirrored: boolean, angleDeg: number) {
+		const W = CANVAS_PX, H = CANVAS_PX;
+		ctx.fillStyle = '#F6F3EE';
+		ctx.fillRect(0, 0, W, H);
 
-	ctx.strokeStyle = '#D6D1C9';
-	ctx.lineWidth = 1;
-	ctx.beginPath();
-	ctx.moveTo(pad.left, pad.top); ctx.lineTo(pad.left, pad.top + cH);
-	ctx.lineTo(pad.left + cW, pad.top + cH); ctx.stroke();
+		const xs = positions.map(p => p[0]);
+		const ys = positions.map(p => p[1]);
+		const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
+		const cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+		const span = Math.max(Math.max(...xs) - Math.min(...xs) + 1, Math.max(...ys) - Math.min(...ys) + 1);
+		const cell = W * 0.72 / span;
+		const s = cell * 0.88;
 
-	ctx.strokeStyle = '#2D6A4F';
-	ctx.lineWidth = 2;
-	let started = false;
-	ctx.beginPath();
-	ANGLES.forEach(a => {
-		const v = means[a];
-		if (v !== null) {
-			started ? ctx.lineTo(xPos(a), yPos(v)) : ctx.moveTo(xPos(a), yPos(v));
-			started = true;
-		}
+		ctx.save();
+		ctx.translate(W / 2, H / 2);
+		ctx.rotate(angleDeg * Math.PI / 180);
+		if (mirrored) ctx.scale(-1, 1);
+
+		positions.forEach(([x, y]) => {
+			const px = (x - cx) * cell;
+			const py = (y - cy) * cell;
+			ctx.fillStyle = '#4A7E9F';
+			ctx.fillRect(px - s/2, py - s/2, s, s);
+			ctx.strokeStyle = '#1A3A50';
+			ctx.lineWidth = 1.5;
+			ctx.strokeRect(px - s/2, py - s/2, s, s);
+		});
+
+		ctx.restore();
+	}
+
+	function getTrialCount(): number {
+		return Math.max(5, Math.min(100, parseInt((document.getElementById('trial-count') as HTMLInputElement).value) || 30));
+	}
+
+	function buildTrials(n: number) {
+		const same = Math.round(n * 0.5);
+		const diff = n - same;
+		const trials: { type: 'same' | 'different'; angle: number }[] = [];
+		for (let i = 0; i < same; i++) trials.push({ type: 'same', angle: ANGLES[i % ANGLES.length] });
+		for (let i = 0; i < diff; i++) trials.push({ type: 'different', angle: ANGLES[Math.floor(Math.random() * ANGLES.length)] });
+		return trials.sort(() => Math.random() - 0.5);
+	}
+
+	let trials: { type: 'same' | 'different'; angle: number }[] = [];
+	let trialIndex = 0;
+	let awaitingResponse = false;
+	let probeStartTime = 0;
+	let currentType: 'same' | 'different' = 'same';
+	let currentAngle = 0;
+	const allResults: { type: string; angle: number; RT: number; correct: boolean }[] = [];
+
+	function showScreen(id: string) {
+		document.querySelectorAll<HTMLElement>('.screen').forEach(el => el.hidden = true);
+		document.getElementById(id)!.hidden = false;
+	}
+
+	function startTrial() {
+		if (trialIndex >= trials.length) { showResults(); return; }
+		const trial = trials[trialIndex];
+		currentType = trial.type;
+		currentAngle = trial.angle;
+
+		document.getElementById('trial-counter')!.textContent =
+			`Trial ${allResults.length + 1} of ${allResults.length + trials.length - trialIndex}`;
+
+		const shape = generateShape();
+		const mirrored = trial.type === 'different';
+		const base = Math.random() * 360;
+		const sign = Math.random() < 0.5 ? 1 : -1;
+
+		drawShape(getCtx('canvas-left'), shape, false, base);
+		drawShape(getCtx('canvas-right'), shape, mirrored, base + sign * trial.angle);
+
+		probeStartTime = performance.now();
+		awaitingResponse = true;
+	}
+
+	document.addEventListener('keydown', (e) => {
+		if (!awaitingResponse) return;
+		const key = e.key.toLowerCase();
+		if (key !== 'f' && key !== 'j') return;
+		awaitingResponse = false;
+		const RT = performance.now() - probeStartTime;
+		const response = key === 'f' ? 'same' : 'different';
+		allResults.push({ type: currentType, angle: currentAngle, RT, correct: response === currentType });
+		trialIndex++;
+		setTimeout(startTrial, 150);
 	});
-	ctx.stroke();
 
-	ANGLES.forEach(a => {
-		const v = means[a];
-		if (v !== null) {
-			ctx.fillStyle = '#2D6A4F';
-			ctx.beginPath();
-			ctx.arc(xPos(a), yPos(v), 5, 0, Math.PI * 2);
-			ctx.fill();
-		}
+	function startBatch() {
+		trials = buildTrials(getTrialCount());
+		trialIndex = 0;
+		showScreen('screen-trial');
+		startTrial();
+	}
+
+	document.getElementById('start-btn')!.addEventListener('click', startBatch);
+	document.getElementById('more-btn')!.addEventListener('click', startBatch);
+	document.getElementById('reset-btn')!.addEventListener('click', () => {
+		allResults.length = 0;
+		showScreen('screen-intro');
 	});
-}
+
+	function showResults() {
+		showScreen('screen-results');
+		const correct = allResults.filter(r => r.correct).length;
+		document.getElementById('accuracy')!.textContent = `${Math.round(correct / allResults.length * 100)}%`;
+		document.getElementById('total-trials')!.textContent = String(allResults.length);
+		drawChart();
+	}
+
+	function drawChart() {
+		const canvas = document.getElementById('rt-chart') as HTMLCanvasElement;
+		const W = 560, H = 360;
+		canvas.style.width = W + 'px';
+		canvas.style.height = H + 'px';
+		canvas.width = W * dpr;
+		canvas.height = H * dpr;
+		const ctx = canvas.getContext('2d')!;
+		ctx.scale(dpr, dpr);
+
+		const pad = { top: 30, right: 40, bottom: 60, left: 80 };
+		const cW = W - pad.left - pad.right;
+		const cH = H - pad.top - pad.bottom;
+
+		const means: Record<number, number | null> = {};
+		ANGLES.forEach(angle => {
+			const ts = allResults.filter(r => r.type === 'same' && r.angle === angle && r.correct);
+			means[angle] = ts.length ? ts.reduce((a, b) => a + b.RT, 0) / ts.length : null;
+		});
+
+		const vals = Object.values(means).filter((v): v is number => v !== null);
+		if (!vals.length) return;
+
+		const minY = Math.min(...vals) * 0.85;
+		const maxY = Math.max(...vals) * 1.12;
+		const xPos = (a: number) => pad.left + a / 160 * cW;
+		const yPos = (rt: number) => pad.top + cH - (rt - minY) / (maxY - minY) * cH;
+
+		ctx.fillStyle = '#F6F3EE';
+		ctx.fillRect(0, 0, W, H);
+
+		for (let i = 0; i <= 4; i++) {
+			const y = pad.top + i * cH / 4;
+			ctx.strokeStyle = '#D6D1C9'; ctx.lineWidth = 1;
+			ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + cW, y); ctx.stroke();
+			const rt = maxY - i * (maxY - minY) / 4;
+			ctx.fillStyle = '#8A8680';
+			ctx.font = '12px "Instrument Sans", system-ui, sans-serif';
+			ctx.textAlign = 'right';
+			ctx.fillText(Math.round(rt) + 'ms', pad.left - 8, y + 4);
+		}
+
+		ctx.fillStyle = '#8A8680';
+		ctx.textAlign = 'center';
+		ANGLES.forEach(a => ctx.fillText(a + '°', xPos(a), pad.top + cH + 20));
+		ctx.fillText('Rotation angle', pad.left + cW / 2, pad.top + cH + 44);
+
+		ctx.save();
+		ctx.translate(18, pad.top + cH / 2);
+		ctx.rotate(-Math.PI / 2);
+		ctx.textAlign = 'center';
+		ctx.fillText('Response time (ms)', 0, 0);
+		ctx.restore();
+
+		ctx.strokeStyle = '#D6D1C9'; ctx.lineWidth = 1;
+		ctx.beginPath();
+		ctx.moveTo(pad.left, pad.top); ctx.lineTo(pad.left, pad.top + cH);
+		ctx.lineTo(pad.left + cW, pad.top + cH); ctx.stroke();
+
+		ctx.strokeStyle = '#2D6A4F'; ctx.lineWidth = 2;
+		let started = false;
+		ctx.beginPath();
+		ANGLES.forEach(a => {
+			const v = means[a];
+			if (v !== null) {
+				started ? ctx.lineTo(xPos(a), yPos(v)) : ctx.moveTo(xPos(a), yPos(v));
+				started = true;
+			}
+		});
+		ctx.stroke();
+
+		ANGLES.forEach(a => {
+			const v = means[a];
+			if (v !== null) {
+				ctx.fillStyle = '#2D6A4F';
+				ctx.beginPath();
+				ctx.arc(xPos(a), yPos(v), 5, 0, Math.PI * 2);
+				ctx.fill();
+			}
+		});
+	}
 </script>

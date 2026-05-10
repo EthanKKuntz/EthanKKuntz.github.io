@@ -1,0 +1,418 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import Footer from '../../components/Footer.astro';
+import Header from '../../components/Header.astro';
+import { SITE_TITLE } from '../../consts';
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title={`Numerosity — ${SITE_TITLE}`} description="Approximate number sense discrimination task." />
+	</head>
+	<body>
+		<Header />
+		<main>
+			<h1>Numerosity Discrimination</h1>
+			<p>
+				Your approximate number system (ANS) lets you estimate quantities without counting.
+				Its precision is captured by the Weber fraction: the minimum proportional difference
+				needed for reliable discrimination. If your Weber fraction is 0.2, you need two groups
+				to differ by at least 20% to tell them apart at threshold. Adults typically land around
+				0.15–0.25, with wide individual variation.
+			</p>
+			<p>
+				Two groups of dots appear briefly. Judge which side has more.
+				Press <kbd>F</kbd> for left, <kbd>J</kbd> for right — you can respond while the dots are
+				still showing. Note that total dot area covaries with numerosity here — the classic confound
+				between numerosity and visual texture density.
+			</p>
+
+			<div id="task">
+				<p id="trial-counter" class="counter"></p>
+
+				<div id="phase-start" class="phase">
+					<div class="settings">
+						<label>
+							Trials per ratio
+							<input type="number" id="trials-per-ratio" value="6" min="2" max="20" />
+						</label>
+					</div>
+					<button id="start-btn">Begin</button>
+				</div>
+
+				<div id="phase-trial" class="phase" hidden>
+					<canvas id="dot-canvas" class="dot-canvas"></canvas>
+					<p class="hint"><kbd>F</kbd> Left has more &emsp; <kbd>J</kbd> Right has more</p>
+				</div>
+
+				<div id="phase-results" class="phase" hidden>
+					<p class="result-summary">Accuracy: <strong id="accuracy"></strong> &ensp; Trials: <strong id="total-trials"></strong></p>
+					<p class="result-weber">Estimated Weber fraction: <strong id="weber"></strong></p>
+					<canvas id="acc-chart"></canvas>
+					<div class="result-actions">
+						<button id="more-btn">Run more trials</button>
+						<button id="reset-btn">Start over</button>
+					</div>
+				</div>
+			</div>
+		</main>
+		<Footer />
+	</body>
+</html>
+
+<style>
+	kbd {
+		font-family: var(--sans);
+		font-size: 0.85rem;
+		background: var(--rule);
+		border: 1px solid var(--fg-muted);
+		border-radius: 3px;
+		padding: 2px 6px;
+	}
+	#task {
+		margin-top: 3rem;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+	.counter {
+		font-size: 0.85rem;
+		color: var(--fg-muted);
+		letter-spacing: 0.04em;
+		margin-bottom: 1rem;
+		height: 1.4em;
+	}
+	.phase {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 1.5rem;
+	}
+	.settings {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		font-size: 0.9rem;
+		color: var(--fg-muted);
+	}
+	.settings label { display: flex; align-items: center; gap: 0.75rem; }
+	.settings input {
+		width: 60px;
+		padding: 0.3rem 0.5rem;
+		border: 1px solid var(--rule);
+		border-radius: 2px;
+		background: var(--bg);
+		color: var(--fg);
+		font-family: var(--sans);
+		font-size: 0.9rem;
+		text-align: center;
+	}
+	.dot-canvas {
+		width: 520px;
+		height: 260px;
+		max-width: 100%;
+		display: block;
+		border: 1px solid var(--rule);
+		border-radius: 2px;
+	}
+	.hint { font-size: 0.9rem; color: var(--fg-muted); margin: 0; }
+	button {
+		font-family: var(--sans);
+		font-size: 0.85rem;
+		font-weight: 500;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--accent);
+		background: none;
+		border: 1.5px solid var(--accent);
+		border-radius: 2px;
+		padding: 0.65rem 2rem;
+		cursor: pointer;
+		transition: background 0.2s, color 0.2s;
+	}
+	button:hover { background: var(--accent); color: var(--bg); }
+	.result-summary { font-size: 1rem; color: var(--fg-muted); margin: 0; }
+	.result-weber { font-size: 0.9rem; color: var(--fg-muted); margin: 0; }
+	.result-actions { display: flex; gap: 1rem; margin-top: 1.5rem; }
+	#acc-chart { max-width: 100%; }
+	[hidden] { display: none !important; }
+</style>
+
+<script>
+	const CANVAS_W = 520, CANVAS_H = 260;
+	const dpr = window.devicePixelRatio || 1;
+
+	const RATIOS = [
+		{ label: '1:2',   r: 0.500, pairs: [[8,16],[10,20],[12,24]] },
+		{ label: '3:4',   r: 0.750, pairs: [[9,12],[12,16],[15,20]] },
+		{ label: '5:6',   r: 0.833, pairs: [[10,12],[15,18],[20,24]] },
+		{ label: '7:8',   r: 0.875, pairs: [[14,16],[21,24],[28,32]] },
+		{ label: '10:11', r: 0.909, pairs: [[10,11],[20,22],[30,33]] },
+		{ label: '13:14', r: 0.929, pairs: [[13,14],[26,28]] },
+	];
+
+	interface Dot { x: number; y: number; r: number; }
+
+	function placeDots(n: number, x1: number, y1: number, x2: number, y2: number, existing: Dot[]): Dot[] {
+		const dots: Dot[] = [];
+		for (let i = 0; i < n; i++) {
+			for (let attempt = 0; attempt < 200; attempt++) {
+				const r = 5 + Math.random() * 7;
+				const x = x1 + r + Math.random() * (x2 - x1 - 2 * r);
+				const y = y1 + r + Math.random() * (y2 - y1 - 2 * r);
+				const all = [...existing, ...dots];
+				if (all.every(d => Math.hypot(d.x - x, d.y - y) >= d.r + r + 3)) {
+					dots.push({ x, y, r });
+					break;
+				}
+			}
+		}
+		return dots;
+	}
+
+	function getCtx(): CanvasRenderingContext2D {
+		const canvas = document.getElementById('dot-canvas') as HTMLCanvasElement;
+		canvas.width = CANVAS_W * dpr;
+		canvas.height = CANVAS_H * dpr;
+		const ctx = canvas.getContext('2d')!;
+		ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+		return ctx;
+	}
+
+	function clearCanvas() {
+		const ctx = getCtx();
+		ctx.fillStyle = '#F6F3EE';
+		ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+	}
+
+	function drawFixation() {
+		const ctx = getCtx();
+		ctx.fillStyle = '#F6F3EE';
+		ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+		const cx = CANVAS_W / 2, cy = CANVAS_H / 2, arm = 10;
+		ctx.strokeStyle = '#1A1917';
+		ctx.lineWidth = 2;
+		ctx.beginPath();
+		ctx.moveTo(cx - arm, cy); ctx.lineTo(cx + arm, cy);
+		ctx.moveTo(cx, cy - arm); ctx.lineTo(cx, cy + arm);
+		ctx.stroke();
+	}
+
+	function drawDots(leftDots: Dot[], rightDots: Dot[]) {
+		const ctx = getCtx();
+		ctx.fillStyle = '#F6F3EE';
+		ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+		leftDots.forEach(d => {
+			ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+			ctx.fillStyle = '#4A7E9F'; ctx.fill();
+		});
+		rightDots.forEach(d => {
+			ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+			ctx.fillStyle = '#C47A3A'; ctx.fill();
+		});
+	}
+
+	function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)); }
+
+	function getTrialsPerRatio(): number {
+		return Math.max(2, Math.min(20, parseInt((document.getElementById('trials-per-ratio') as HTMLInputElement).value) || 6));
+	}
+
+	function buildTrials(): { ratioIdx: number }[] {
+		const n = getTrialsPerRatio();
+		const trials = RATIOS.flatMap((_, idx) => Array(n).fill(null).map(() => ({ ratioIdx: idx })));
+		for (let i = trials.length - 1; i > 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1));
+			[trials[i], trials[j]] = [trials[j], trials[i]];
+		}
+		return trials;
+	}
+
+	let trials: { ratioIdx: number }[] = [];
+	let trialIndex = 0;
+	let awaitingResponse = false;
+	let probeStartTime = 0;
+	let currentLeftMore = false;
+	let clearTimeoutId: ReturnType<typeof setTimeout> | null = null;
+	const allResults: { ratioIdx: number; RT: number; correct: boolean }[] = [];
+
+	function setPhase(name: string) {
+		document.querySelectorAll<HTMLElement>('.phase').forEach(el => el.hidden = true);
+		document.getElementById('phase-' + name)!.hidden = false;
+	}
+
+	async function runTrial() {
+		if (clearTimeoutId !== null) { clearTimeout(clearTimeoutId); clearTimeoutId = null; }
+
+		const trial = trials[trialIndex];
+		const ratio = RATIOS[trial.ratioIdx];
+		const pair = ratio.pairs[Math.floor(Math.random() * ratio.pairs.length)];
+		const leftMore = Math.random() < 0.5;
+		currentLeftMore = leftMore;
+		const [nLeft, nRight] = leftMore ? [pair[1], pair[0]] : [pair[0], pair[1]];
+
+		document.getElementById('trial-counter')!.textContent =
+			`Trial ${allResults.length + 1} of ${allResults.length + trials.length - trialIndex}`;
+
+		drawFixation();
+		await sleep(300);
+
+		const margin = 15, midGap = 60;
+		const leftDots = placeDots(nLeft, margin, margin, CANVAS_W / 2 - midGap / 2, CANVAS_H - margin, []);
+		const rightDots = placeDots(nRight, CANVAS_W / 2 + midGap / 2, margin, CANVAS_W - margin, CANVAS_H - margin, []);
+		drawDots(leftDots, rightDots);
+
+		probeStartTime = performance.now();
+		awaitingResponse = true;
+		clearTimeoutId = setTimeout(clearCanvas, 1500);
+	}
+
+	document.addEventListener('keydown', async (e) => {
+		if (!awaitingResponse) return;
+		const key = e.key.toLowerCase();
+		if (key !== 'f' && key !== 'j') return;
+		awaitingResponse = false;
+		if (clearTimeoutId !== null) { clearTimeout(clearTimeoutId); clearTimeoutId = null; }
+
+		const RT = performance.now() - probeStartTime;
+		allResults.push({ ratioIdx: trials[trialIndex].ratioIdx, RT, correct: (key === 'f') === currentLeftMore });
+		trialIndex++;
+
+		if (trialIndex >= trials.length) {
+			await sleep(200);
+			showResults();
+		} else {
+			await sleep(150);
+			await runTrial();
+		}
+	});
+
+	function startBatch() {
+		trials = buildTrials();
+		trialIndex = 0;
+		setPhase('trial');
+		clearCanvas();
+		runTrial();
+	}
+
+	document.getElementById('start-btn')!.addEventListener('click', startBatch);
+	document.getElementById('more-btn')!.addEventListener('click', startBatch);
+	document.getElementById('reset-btn')!.addEventListener('click', () => {
+		allResults.length = 0;
+		document.getElementById('trial-counter')!.textContent = '';
+		setPhase('start');
+	});
+
+	function estimateWeber(): string {
+		const points = RATIOS.map((ratio, idx) => {
+			const rs = allResults.filter(r => r.ratioIdx === idx);
+			return rs.length >= 2 ? { r: ratio.r, acc: rs.filter(r => r.correct).length / rs.length } : null;
+		}).filter((p): p is { r: number; acc: number } => p !== null);
+
+		if (points.length < 2) return 'insufficient data';
+
+		for (let i = 0; i < points.length - 1; i++) {
+			const p1 = points[i], p2 = points[i + 1];
+			if ((p1.acc >= 0.75) !== (p2.acc >= 0.75)) {
+				const t = (0.75 - p1.acc) / (p2.acc - p1.acc);
+				const rThresh = p1.r + t * (p2.r - p1.r);
+				return (2 * (1 - rThresh) / (1 + rThresh)).toFixed(2);
+			}
+		}
+		const last = points[points.length - 1];
+		const first = points[0];
+		if (points.every(p => p.acc >= 0.75)) return '< ' + (2 * (1 - last.r) / (1 + last.r)).toFixed(2);
+		return '> ' + (2 * (1 - first.r) / (1 + first.r)).toFixed(2);
+	}
+
+	function showResults() {
+		setPhase('results');
+		const correct = allResults.filter(r => r.correct).length;
+		document.getElementById('accuracy')!.textContent = `${Math.round(correct / allResults.length * 100)}%`;
+		document.getElementById('total-trials')!.textContent = String(allResults.length);
+		document.getElementById('weber')!.textContent = estimateWeber();
+		drawChart();
+	}
+
+	function drawChart() {
+		const canvas = document.getElementById('acc-chart') as HTMLCanvasElement;
+		const W = 560, H = 320;
+		canvas.style.width = W + 'px';
+		canvas.style.height = H + 'px';
+		canvas.width = W * dpr;
+		canvas.height = H * dpr;
+		const ctx = canvas.getContext('2d')!;
+		ctx.scale(dpr, dpr);
+
+		const pad = { top: 30, right: 50, bottom: 60, left: 80 };
+		const cW = W - pad.left - pad.right;
+		const cH = H - pad.top - pad.bottom;
+
+		const accs = RATIOS.map((_, idx) => {
+			const rs = allResults.filter(r => r.ratioIdx === idx);
+			return rs.length ? rs.filter(r => r.correct).length / rs.length : null;
+		});
+
+		ctx.fillStyle = '#F6F3EE';
+		ctx.fillRect(0, 0, W, H);
+
+		for (let i = 0; i <= 4; i++) {
+			const pct = i * 25;
+			const y = pad.top + cH - pct / 100 * cH;
+			ctx.strokeStyle = '#D6D1C9'; ctx.lineWidth = 1;
+			ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + cW, y); ctx.stroke();
+			ctx.fillStyle = '#8A8680';
+			ctx.font = '12px "Instrument Sans", system-ui, sans-serif';
+			ctx.textAlign = 'right';
+			ctx.fillText(pct + '%', pad.left - 8, y + 4);
+		}
+
+		const y75 = pad.top + cH - 0.75 * cH;
+		ctx.setLineDash([4, 4]);
+		ctx.strokeStyle = '#8A8680'; ctx.lineWidth = 1;
+		ctx.beginPath(); ctx.moveTo(pad.left, y75); ctx.lineTo(pad.left + cW, y75); ctx.stroke();
+		ctx.setLineDash([]);
+		ctx.fillStyle = '#8A8680';
+		ctx.textAlign = 'left';
+		ctx.font = '11px "Instrument Sans", system-ui, sans-serif';
+		ctx.fillText('75%', pad.left + cW + 4, y75 + 4);
+
+		const barW = cW / RATIOS.length * 0.52;
+		RATIOS.forEach((ratio, idx) => {
+			const acc = accs[idx];
+			const x = pad.left + (idx + 0.5) / RATIOS.length * cW;
+			ctx.fillStyle = '#8A8680';
+			ctx.textAlign = 'center';
+			ctx.font = '11px "Instrument Sans", system-ui, sans-serif';
+			ctx.fillText(ratio.label, x, pad.top + cH + 20);
+
+			if (acc !== null) {
+				const barH = acc * cH;
+				ctx.fillStyle = '#4A7E9F';
+				ctx.fillRect(x - barW / 2, pad.top + cH - barH, barW, barH);
+				ctx.fillStyle = acc > 0.25 ? '#F6F3EE' : '#1A1917';
+				ctx.textAlign = 'center';
+				ctx.font = '11px "Instrument Sans", system-ui, sans-serif';
+				ctx.fillText(Math.round(acc * 100) + '%', x, pad.top + cH - barH + (acc > 0.12 ? 16 : -6));
+			}
+		});
+
+		ctx.fillStyle = '#8A8680';
+		ctx.textAlign = 'center';
+		ctx.font = '12px "Instrument Sans", system-ui, sans-serif';
+		ctx.fillText('Numerosity ratio (smaller : larger)', pad.left + cW / 2, pad.top + cH + 44);
+
+		ctx.save();
+		ctx.translate(18, pad.top + cH / 2);
+		ctx.rotate(-Math.PI / 2);
+		ctx.textAlign = 'center';
+		ctx.fillText('Accuracy', 0, 0);
+		ctx.restore();
+
+		ctx.strokeStyle = '#D6D1C9'; ctx.lineWidth = 1;
+		ctx.beginPath();
+		ctx.moveTo(pad.left, pad.top); ctx.lineTo(pad.left, pad.top + cH);
+		ctx.lineTo(pad.left + cW, pad.top + cH); ctx.stroke();
+	}
+</script>

@@ -3,6 +3,7 @@ import BaseHead from '../../components/BaseHead.astro';
 import Footer from '../../components/Footer.astro';
 import Header from '../../components/Header.astro';
 import { SITE_TITLE } from '../../consts';
+import sternberg1 from '../../assets/sternberg1.gif';
 ---
 
 <!doctype html>
@@ -15,13 +16,40 @@ import { SITE_TITLE } from '../../consts';
 		<main>
 			<h1>The Sternberg Memory Task</h1>
 			<p>
-				In 1966, Saul Sternberg showed that people scan short-term memory serially and exhaustively.
-				You'll see a set of digits briefly, then a probe digit. Judge whether the probe was in the set.
-				The striking result: response time increases linearly with set size — about 38ms per item —
-				and the slope is the same whether the answer is yes or no, suggesting you scan the whole set
-				every time regardless.
+				In 1966, Saul Sternberg ran a <a href="https://www.sas.upenn.edu/~saul/hss.html">now-famous experiment</a>
+				on people's short-term memory abilities.
+				He presented 1–6 digits for a person to remember, and shortly thereafter presented another
+				number that either was or was not in the set the person memorized. He found that the average
+				response time was a linear function of the number of digits memorized, and the same slope
+				applied whether the item was in the list or not — positive responses are faster overall, but
+				the two lines are parallel. An interpretation given by Sternberg is that people serially and
+				<em>exhaustively</em> scan the list in memory to check for matches, which is why the slopes
+				are the same. If the scan terminated when people found a match, we'd expect a smaller slope
+				for positive responses on average, but this isn't what we see.
 			</p>
-			<p>Press <kbd>F</kbd> if the probe was in the set, <kbd>J</kbd> if it was not.</p>
+			<figure class="figure-wrap">
+				<img src={sternberg1.src} alt="RT vs set size from Sternberg's first experiment, showing parallel linear functions for positive and negative responses" />
+				<figcaption>
+					<em>From the paper:</em> Fig. 1. Relation between response latency and the number of symbols
+					in memory, s, in experiment 1. Mean latencies, over eight subjects, of positive responses
+					(filled circles) and negative responses (open circles). About 95 observations per point.
+					For each s, overall mean (heavy bar) and estimates of σ are indicated (6). Solid line was
+					fitted by least squares to overall means. Upper bound for parallel process (broken curve).
+				</figcaption>
+			</figure>
+			<p>
+				At larger set sizes — around 10–15 symbols — the linear relationship breaks down, and people
+				actually get faster at scanning as there are more symbols in memory. It is not known precisely
+				why or how this is the case.
+			</p>
+			<p>
+				Here, you can try it for yourself! Typically people scan at 25–30 items/second (~38ms/item),
+				and the scanning rate seems to have negligible relation with intelligence.
+			</p>
+			<p>
+				You'll be shown a set of numbers for 1.5 seconds, which will disappear and be replaced with
+				a single number. Press <kbd>F</kbd> if this number was in the set, <kbd>J</kbd> if not.
+			</p>
 
 			<div id="task">
 				<p id="trial-counter" class="counter"></p>
@@ -55,11 +83,13 @@ import { SITE_TITLE } from '../../consts';
 
 				<div id="phase-results" class="phase" hidden>
 					<p class="result-summary">Accuracy: <strong id="accuracy"></strong> &ensp; Trials: <strong id="total-trials"></strong></p>
+					<p class="result-scanning">Scanning rate: <strong id="scanning-rate"></strong></p>
 					<canvas id="rt-chart"></canvas>
 					<div class="result-actions">
 						<button id="more-btn">Run more trials</button>
 						<button id="reset-btn">Start over</button>
 					</div>
+					<p class="result-note">Getting an accurate estimate of your scanning rate takes around 6 trials per set size at least — the linear trend will become more clear as you do more trials.</p>
 				</div>
 			</div>
 		</main>
@@ -68,6 +98,24 @@ import { SITE_TITLE } from '../../consts';
 </html>
 
 <style>
+	.figure-wrap {
+		display: flex;
+		gap: 1.5rem;
+		align-items: flex-start;
+		margin: 1.5rem 0;
+	}
+	.figure-wrap img {
+		flex-shrink: 0;
+		max-width: 55%;
+		border: 1px solid var(--rule);
+		border-radius: 2px;
+		display: block;
+	}
+	.figure-wrap figcaption {
+		font-size: 0.82rem;
+		color: var(--fg-muted);
+		line-height: 1.55;
+	}
 	kbd {
 		font-family: var(--sans);
 		font-size: 0.85rem;
@@ -162,7 +210,19 @@ import { SITE_TITLE } from '../../consts';
 	.result-summary {
 		font-size: 1rem;
 		color: var(--fg-muted);
-		margin: 0 0 1.5rem;
+		margin: 0;
+	}
+	.result-scanning {
+		font-size: 0.9rem;
+		color: var(--fg-muted);
+		margin: 0.3rem 0 1.5rem;
+	}
+	.result-note {
+		font-size: 0.82rem;
+		color: var(--fg-muted);
+		margin: 1rem 0 0;
+		max-width: 480px;
+		text-align: center;
 	}
 	.result-actions {
 		display: flex;
@@ -286,11 +346,31 @@ import { SITE_TITLE } from '../../consts';
 		setPhase('start');
 	});
 
+	function computeSlope(): string {
+		const points = SET_SIZES.map(s => {
+			const ts = allResults.filter(r => r.setSize === s && r.correct);
+			return ts.length ? { x: s, y: ts.reduce((a, b) => a + b.RT, 0) / ts.length } : null;
+		}).filter((p): p is { x: number; y: number } => p !== null);
+
+		if (points.length < 2) return 'insufficient data';
+
+		const xBar = points.reduce((a, b) => a + b.x, 0) / points.length;
+		const yBar = points.reduce((a, b) => a + b.y, 0) / points.length;
+		const num = points.reduce((a, b) => a + (b.x - xBar) * (b.y - yBar), 0);
+		const den = points.reduce((a, b) => a + (b.x - xBar) ** 2, 0);
+		if (den === 0) return 'insufficient data';
+
+		const slope = num / den;
+		if (slope <= 0) return 'no clear trend yet — try more trials';
+		return `${Math.round(1000 / slope)} symbols/sec (${Math.round(slope)} ms/item)`;
+	}
+
 	function showResults() {
 		setPhase('results');
 		const correct = allResults.filter(r => r.correct).length;
 		document.getElementById('accuracy')!.textContent = `${Math.round(correct / allResults.length * 100)}%`;
 		document.getElementById('total-trials')!.textContent = String(allResults.length);
+		document.getElementById('scanning-rate')!.textContent = computeSlope();
 		drawChart();
 	}
 
