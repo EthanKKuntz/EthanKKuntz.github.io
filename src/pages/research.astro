@@ -1,0 +1,291 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { SITE_TITLE } from '../consts';
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title={`AI-assisted Research — ${SITE_TITLE}`} description="AI-assisted research notes on open problems, written with Claude." />
+	</head>
+	<body>
+		<Header />
+		<main>
+			<h1>AI-assisted Research</h1>
+			<p class="intro">
+				Short notes on open problems, worked out in conversation with AI models &mdash; mostly
+				GPT 5.6 ("Sol"), with a couple of notes below written by Claude Fable 5. Some
+				resolve a stated problem, some are partial progress or elementary counterexamples.
+				None of these have been independently reviewed &mdash; treat them as working notes,
+				not publications.
+			</p>
+
+			<section class="note-section">
+				<h2>Ben Green &mdash; 100 Open Problems</h2>
+				<ul class="note-list">
+					<li>
+						<a href="/research/problem-lists/ben_green_100_open_problems.pdf" class="note-title">100 Open Problems</a>
+						<p class="note-desc">Green's own problem list &mdash; the source for the note below.</p>
+					</li>
+					<li>
+						<a href="/research/green_problem57_counterexample.pdf" class="note-title">A Counterexample to Green's Problem 57</a>
+						<p class="note-desc">
+							An explicit negative answer, over <em>G = Z/3Z</em>, to whether two notions of
+							"quadratically structured function" coincide. The witness and separating bound
+							both have exact finite certificates.
+						</p>
+						<p class="note-links">
+							<a href="/research/green_problem57_counterexample.md">source notes (.md)</a>
+							&middot;
+							<a href="/research/problem57_counterexample_check.py">certificate checker (.py)</a>
+						</p>
+					</li>
+				</ul>
+			</section>
+
+			<section class="note-section">
+				<h2>Stefan Steinerberger &mdash; Some Open Problems</h2>
+				<ul class="note-list">
+					<li>
+						<a href="/research/problem-lists/steinerberger_some_open_problems.pdf" class="note-title">Some Open Problems</a>
+						<p class="note-desc">Steinerberger's own problem list &mdash; the source for the notes below.</p>
+					</li>
+					<li>
+						<a href="/research/amusing_sequence_limit.pdf" class="note-title">A Universal Limit Profile for Steinerberger's Amusing Sequence</a>
+						<p class="note-desc">
+							On Problem 68: after centering, the sequence f<sub>N</sub>(x) = &sum; |sin(kx)|/k
+							converges in H<sup>s</sup>(T) for every s &lt; 1/2 to an explicit limit function
+							of exact regularity.
+						</p>
+					</li>
+					<li>
+						<a href="/research/weibull_counterexample.pdf" class="note-title">A Weibull Counterexample to a Proposed Tail-Ratio Inequality</a>
+						<p class="note-desc">
+							On Problem 26: an elementary counterexample showing the exponential distribution
+							is not extremal for the one-big-jump-vs-two-moderate-jumps ratio.
+						</p>
+					</li>
+					<li>
+						<a href="/research/odd_approximate_hadamard.pdf" class="note-title">A Parity Obstruction for Odd Approximate Hadamard Matrices</a>
+						<p class="note-desc">
+							On approximate Hadamard matrices: every odd-order sign matrix is bounded away
+							from the Hadamard ratio by a parity argument.
+						</p>
+					</li>
+					<li>
+						<a href="/research/consecutive_fourier_zeros.pdf" class="note-title">Exact Support Radius for Consecutive Vanishing Fourier Coefficients</a>
+						<p class="note-desc">
+							The infimal support radius of a nonzero smooth nonnegative function on the
+							circle whose Fourier coefficients vanish on a consecutive block of frequencies.
+						</p>
+					</li>
+					<li>
+						<a href="/research/critical-point-inequalities-note.pdf" class="note-title">A One-Parameter Family of Critical Point Inequalities</a>
+						<p class="note-desc">
+							A family of L<sup>p</sup> critical-point inequalities with optimal exponents,
+							including an explicit sharpness witness.
+						</p>
+						<p class="note-attr">Written with Claude Fable 5.</p>
+					</li>
+					<li>
+						<a href="/research/nontangential_boundary_constant.pdf" class="note-title">The Optimal Constant in a Non-Tangential Boundary Inequality for Convex Bodies</a>
+						<p class="note-desc">
+							The sharp constant relating the measure of non-tangential boundary points of a
+							convex body to its volume and diameter.
+						</p>
+					</li>
+					<li>
+						<a href="/research/greedy_bernoulli_sequence.pdf" class="note-title">The Bernoulli Greedy-Energy Sequence from One Seed</a>
+						<p class="note-desc">
+							Dyadic structure and logarithmic energy of a greedy sequence built from the
+							periodic second Bernoulli polynomial, with a quadratic-logarithmic obstruction.
+						</p>
+					</li>
+				</ul>
+			</section>
+
+			<section class="note-section">
+				<h2>Marcus&ndash;de Oliveira Determinantal Conjecture</h2>
+				<ul class="note-list">
+					<li>
+						<a href="/research/Marcus-de-Oliveira_Verification_Report_2026-07-20.pdf" class="note-title">Counterexample Mining and an Exact n=4 Boundary Certificate Through Eighth Order</a>
+						<p class="note-desc">
+							Computational search plus an exact, computer-assisted local theorem at an
+							n=4 commuting/permutation point: every off-diagonal skew-Hermitian exponential
+							direction is certified non-outward through order eight. Not a proof of the
+							global conjecture; no counterexample found in dimensions 4&ndash;6.
+						</p>
+						<p class="note-links">
+							<a href="/research/Marcus-de-Oliveira-counterexample-mining-2026-07-20.zip">full reproducibility archive (.zip)</a>
+							&mdash; search code, exact JSON certificates, tests
+						</p>
+					</li>
+				</ul>
+			</section>
+
+			<section class="note-section">
+				<h2>Other</h2>
+				<ul class="note-list">
+					<li>
+						<a href="/research/a63880_paper.pdf" class="note-title">The Equation &sigma;*(n) = 2&sigma;*(n): The Single-Repeated-Prime Case</a>
+						<p class="note-desc">
+							On OEIS A063880 and R. Stephan's mod-216 conjecture: an unconditional proof
+							for all solutions with at most one repeated odd prime factor, covering every
+							known solution below 2&times;10<sup>7</sup>.
+						</p>
+						<p class="note-attr">Written with Claude Fable 5.</p>
+					</li>
+				</ul>
+			</section>
+
+			<section class="note-section">
+				<h2>Open Problem List Harvest</h2>
+				<p class="section-note">
+					A collection of open-problem lists gathered from various researchers and venues,
+					July 2026. PDFs are preserved as-is; personal web lists and index pages are saved
+					as offline HTML snapshots. Treat these as a snapshot in time &mdash; check the
+					original source before relying on the status of any individual problem.
+				</p>
+				<h3 class="subhead">Direct lists</h3>
+				<ul class="note-list">
+					<li>
+						<a href="/research/problem-lists/steinerberger_some_open_problems.pdf" class="note-title">Some Open Problems</a>
+						<p class="note-desc">Stefan Steinerberger. Supplied list; January 2025 update.</p>
+					</li>
+					<li>
+						<a href="/research/problem-lists/ben_green_100_open_problems.pdf" class="note-title">100 Open Problems</a>
+						<p class="note-desc">Ben Green. Personal, maintained collection; 100 problems.</p>
+					</li>
+					<li>
+						<a href="/research/problem-lists/sam_spiro_problems_somebody_to_solve.pdf" class="note-title">Problems: Somebody to Solve!</a>
+						<p class="note-desc">Sam Spiro. Personal, lesser-known combinatorics list; tiered by interest.</p>
+					</li>
+					<li>
+						<a href="/research/problem-lists/boris_bukh_interesting_problems.html" class="note-title">Interesting Problems</a>
+						<p class="note-desc">Boris Bukh. Personal discrete geometry/combinatorics list.</p>
+					</li>
+					<li>
+						<a href="/research/problem-lists/randomstrasse101_open_problems_2025.pdf" class="note-title">Open Problems 2025</a>
+						<p class="note-desc">ETH Z&uuml;rich's 2025 collection; probability, computation, combinatorics, statistics.</p>
+					</li>
+					<li>
+						<a href="/research/problem-lists/cccg_2025_open_problems.pdf" class="note-title">CCCG 2025 Open Problems</a>
+						<p class="note-desc">2025 Canadian Conference on Computational Geometry problem session.</p>
+					</li>
+					<li>
+						<a href="/research/problem-lists/eremenko_favorite_unsolved_problems.html" class="note-title">Favorite Unsolved Problems</a>
+						<p class="note-desc">Alexandre Eremenko. Complex analysis / dynamics; some prize-backed.</p>
+					</li>
+					<li>
+						<a href="/research/problem-lists/haim_brezis_favorite_open_problems.pdf" class="note-title">Favorite Open Problems</a>
+						<p class="note-desc">Ha&iuml;m Brezis. Nonlinear analysis and PDE.</p>
+					</li>
+					<li>
+						<a href="/research/problem-lists/david_aldous_open_probability_problems.pdf" class="note-title">Open Probability Problems</a>
+						<p class="note-desc">David Aldous. Probability and random discrete structures.</p>
+					</li>
+					<li>
+						<a href="/research/problem-lists/patzt_miller_representation_stability.html" class="note-title">Representation Stability Problems</a>
+						<p class="note-desc">Patzt &amp; Miller. Curated status-aware list with literature links.</p>
+					</li>
+				</ul>
+				<h3 class="subhead">Indexes / landing pages</h3>
+				<ul class="note-list">
+					<li>
+						<a href="/research/problem-lists/amr_problem_lists_index.html" class="note-title">AMR Problem Lists</a>
+						<p class="note-desc">Broad categorized index of specialist lists; a route to further targets.</p>
+					</li>
+					<li>
+						<a href="/research/problem-lists/jeff_erickson_open_problems.html" class="note-title">Open Problems</a>
+						<p class="note-desc">Jeff Erickson. Computational-geometry problem-list landing page.</p>
+					</li>
+					<li>
+						<a href="/research/problem-lists/k3_new_problem_list_landing_page.html" class="note-title">New Problem List (Kirby-style)</a>
+						<p class="note-desc">Landing page for the 2023 modern Kirby-list project; links its published problem volume.</p>
+					</li>
+				</ul>
+			</section>
+		</main>
+		<Footer />
+	</body>
+</html>
+
+<style>
+	.intro {
+		max-width: 60ch;
+		color: var(--fg-muted);
+		margin-top: 1rem;
+	}
+	.note-section {
+		margin-top: 2.5rem;
+	}
+	.note-section h2 {
+		font-size: 0.8rem;
+		font-weight: 500;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--fg-muted);
+		margin-bottom: 1.25rem;
+	}
+	.section-note {
+		max-width: 60ch;
+		font-size: 0.9rem;
+		color: var(--fg-muted);
+		margin: 0 0 1.5rem;
+	}
+	.subhead {
+		font-family: var(--serif);
+		font-size: 0.95rem;
+		font-weight: 500;
+		color: var(--fg);
+		margin: 1.5rem 0 1rem;
+	}
+	.note-list {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
+	}
+	.note-list li {
+		border-left: 2px solid var(--rule);
+		padding-left: 1.25rem;
+		transition: border-color 0.2s;
+	}
+	.note-list li:hover {
+		border-color: var(--accent);
+	}
+	.note-title {
+		font-family: var(--serif);
+		font-size: 1.05rem;
+		color: var(--fg);
+		font-weight: 500;
+	}
+	.note-title:hover {
+		color: var(--accent);
+	}
+	.note-desc {
+		margin: 0.3rem 0 0;
+		font-size: 0.9rem;
+		color: var(--fg-muted);
+	}
+	.note-links {
+		margin: 0.4rem 0 0;
+		font-size: 0.85rem;
+	}
+	.note-links a {
+		color: var(--fg-muted);
+	}
+	.note-links a:hover {
+		color: var(--accent);
+	}
+	.note-attr {
+		margin: 0.4rem 0 0;
+		font-size: 0.8rem;
+		font-style: italic;
+		color: var(--fg-muted);
+	}
+</style>
